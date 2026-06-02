@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>電気回路シミュレーター｜理科教材</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#04050b;--panel:rgba(14,18,32,0.85);--panel-line:rgba(120,150,210,0.18);
+    --amber:#f5a623;--amber-soft:#ffce7a;--cyan:#5fd3e0;--cyan-soft:#9ff0fb;--text:#e8ecf6;--dim:#8893ad;
+    --good:#5fe09a;--bad:#ff7a7a;
+    --jp:'Zen Kaku Gothic New',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{background:
+    radial-gradient(1100px 700px at 22% -10%, rgba(95,211,224,0.10), transparent 60%),
+    radial-gradient(900px 800px at 110% 120%, rgba(245,166,35,0.07), transparent 55%),var(--bg);
+    color:var(--text);font-family:var(--jp);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+  header{display:flex;align-items:center;gap:14px;padding:11px 18px;
+    border-bottom:1px solid var(--panel-line);background:rgba(6,8,16,0.6);backdrop-filter:blur(8px);flex:none}
+  header .accent{width:4px;height:34px;border-radius:3px;
+    background:linear-gradient(var(--cyan),var(--cyan-soft));box-shadow:0 0 14px rgba(95,211,224,.5)}
+  header h1{font-size:18px;font-weight:700;letter-spacing:.04em}
+  header .en{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.20em;margin-top:1px}
+  header .sys{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);
+    display:flex;align-items:center;gap:7px;letter-spacing:.08em}
+  header .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  header .unit{color:var(--cyan-soft)}
+
+  main{flex:1;display:grid;grid-template-columns:1fr 318px;min-height:0}
+  .stage{position:relative;min-height:0;overflow:hidden}
+  #cv{display:block;width:100%;height:100%;touch-action:none}
+  .hint{position:absolute;top:12px;left:14px;font-size:11px;line-height:1.7;color:var(--dim);
+    font-family:var(--mono);letter-spacing:.02em;pointer-events:none;
+    background:rgba(6,8,16,.4);padding:6px 9px;border-radius:8px;border:1px solid var(--panel-line)}
+  .hint b{color:var(--cyan-soft);font-weight:600}
+
+  .controls{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
+    padding:11px 16px;backdrop-filter:blur(10px);max-width:94%;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+  .seg{display:flex;background:rgba(0,0,0,.3);border-radius:10px;padding:3px;gap:3px}
+  .seg button{border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+    font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.18s}
+  .seg button.on{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;font-weight:700;box-shadow:0 0 12px rgba(95,211,224,.35)}
+  .sl{display:flex;align-items:center;gap:9px}
+  .sl.r2.hide{display:none}
+  .sl label{font-size:12px;color:var(--dim)}
+  .sl input[type=range]{-webkit-appearance:none;appearance:none;width:118px;height:4px;border-radius:3px;
+    background:linear-gradient(90deg,var(--cyan) 0%,var(--cyan) var(--p,0%),rgba(255,255,255,.14) var(--p,0%));outline:none;cursor:pointer}
+  .sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+  .sl input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;
+    background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+  .sl b{font-family:var(--mono);font-size:13px;color:var(--cyan-soft);min-width:48px;text-align:right}
+  .toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--dim);user-select:none}
+  .sw{width:38px;height:21px;border-radius:12px;background:rgba(255,255,255,.14);position:relative;transition:.2s}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#cfd6e6;transition:.2s}
+  .toggle.on .sw{background:var(--cyan)}
+  .toggle.on .sw::after{left:19px;background:#06222a}
+  .toggle.on{color:var(--text)}
+
+  aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);display:flex;flex-direction:column;min-height:0}
+  .tabbar{display:flex;border-bottom:1px solid var(--panel-line);flex:none}
+  .tabbar button{flex:1;border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+    font-size:13px;font-weight:500;padding:13px 0;cursor:pointer;position:relative;transition:.18s}
+  .tabbar button.on{color:var(--text)}
+  .tabbar button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:2px;
+    border-radius:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+  .panelbody{flex:1;overflow-y:auto;padding:16px}
+  .panelbody::-webkit-scrollbar{width:7px}.panelbody::-webkit-scrollbar-thumb{background:rgba(120,150,210,.25);border-radius:4px}
+
+  .meter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;margin-top:9px;
+    border:1px solid var(--panel-line);border-radius:11px;background:rgba(255,255,255,.02)}
+  .meter .k{font-size:12px;color:var(--dim);flex:none}
+  .meter .v{font-family:var(--mono);font-size:14px;color:var(--text);text-align:right}
+  .meter .v small{color:var(--dim);font-size:11px}
+  .meter .v.big{font-size:18px;color:var(--cyan-soft);font-weight:600}
+  .meter .v.amber{color:var(--amber-soft)}
+  .meter .v.jp{font-family:var(--jp);font-size:12.5px}
+  .sub2{font-size:11px;color:var(--dim);letter-spacing:.1em;margin:18px 0 4px;text-transform:uppercase}
+  .bulb-card{border:1px solid var(--panel-line);border-radius:11px;padding:12px;margin-top:9px;background:rgba(255,255,255,.02)}
+  .bulb-card .top{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:500;font-size:13px}
+  .bdot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#f5a623);box-shadow:0 0 8px var(--amber)}
+  .bvals{display:flex;gap:14px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .bvals b{color:var(--text);font-weight:600}
+  .bright-bar{height:6px;border-radius:4px;background:rgba(255,255,255,0.08);margin-top:9px;overflow:hidden}
+  .bright-bar i{display:block;height:100%;background:linear-gradient(90deg,#7a5a10,#ffce7a);transition:width .15s}
+  .ohm{margin-top:14px;border:1px dashed var(--panel-line);border-radius:11px;padding:14px;text-align:center;font-family:var(--mono)}
+  .ohm .eq{font-size:15px;color:var(--text)}
+  .ohm .eq span{color:var(--cyan-soft)}
+  .ohm .lab{font-size:10px;color:var(--dim);letter-spacing:.15em;margin-top:6px}
+
+  .ex h3{font-size:14px;color:var(--cyan-soft);margin:18px 0 10px}
+  .ex h3:first-child{margin-top:4px}
+  .ex p{font-size:13.5px;line-height:1.85;color:#c8d0e4;margin-bottom:10px}
+  .pt{display:flex;gap:9px;margin-bottom:13px;font-size:13.5px;line-height:1.72}
+  .pt::before{content:"●";color:var(--cyan);font-size:9px;margin-top:5px;flex:none}
+  .pt b{color:var(--cyan-soft);font-weight:700}
+
+  .quiz-q{font-size:14.5px;font-weight:500;line-height:1.7;margin-bottom:14px}
+  .quiz-q .num{font-family:var(--mono);color:var(--cyan-soft);margin-right:8px}
+  .quiz-prog{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:10px}
+  .quiz-opt{display:block;width:100%;text-align:left;border:1px solid var(--panel-line);background:rgba(255,255,255,.02);
+    color:var(--text);font-family:var(--jp);font-size:13.5px;padding:12px 14px;border-radius:11px;margin-bottom:9px;cursor:pointer;transition:.15s}
+  .quiz-opt:hover{border-color:rgba(120,150,210,.45);background:rgba(255,255,255,.05)}
+  .quiz-opt.ok{border-color:var(--good);background:rgba(95,224,154,.12);color:var(--good)}
+  .quiz-opt.ng{border-color:var(--bad);background:rgba(255,122,122,.12);color:var(--bad)}
+  .quiz-opt:disabled{cursor:default}
+  .quiz-fb{font-size:13px;line-height:1.7;margin-top:10px;padding:12px 14px;border-radius:11px;display:none}
+  .quiz-fb.show{display:block}
+  .quiz-fb.ok{background:rgba(95,224,154,.1);border:1px solid rgba(95,224,154,.3)}
+  .quiz-fb.ng{background:rgba(255,122,122,.1);border:1px solid rgba(255,122,122,.3)}
+  .quiz-fb .lab{font-weight:700;margin-right:6px}
+  .quiz-fb.ok .lab{color:var(--good)}.quiz-fb.ng .lab{color:var(--bad)}
+  .btn{border:1px solid var(--panel-line);background:rgba(255,255,255,.04);color:var(--text);font-family:var(--jp);
+    font-size:13px;font-weight:600;padding:11px 18px;border-radius:11px;cursor:pointer;margin-top:6px;transition:.15s}
+  .btn:hover{background:rgba(255,255,255,.09)}
+  .btn.primary{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;border:0;box-shadow:0 0 14px rgba(95,211,224,.3)}
+  .quiz-result{text-align:center;padding:18px 0}
+  .quiz-result .score{font-family:var(--mono);font-size:42px;font-weight:600;color:var(--cyan-soft)}
+  .quiz-result .lab{font-size:13px;color:var(--dim);margin:6px 0 18px}
+  .empty{color:var(--dim);font-size:13px;line-height:1.9;text-align:center;margin-top:40px}
+  .empty .big{font-size:34px;display:block;margin-bottom:10px}
+
+  .panel-toggle{display:none}
+  .panel-close{display:none}
+  @media(max-width:820px){
+    main{grid-template-columns:1fr}
+    aside{position:fixed;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+      transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+      background:rgba(8,11,20,.97);backdrop-filter:blur(12px)}
+    aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+    .panel-toggle{display:flex;position:absolute;top:12px;right:14px;z-index:20;align-items:center;gap:6px;
+      border:1px solid var(--panel-line);background:var(--panel);color:var(--text);font-family:var(--jp);
+      font-size:12px;font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+    .panel-close{display:block;position:absolute;top:10px;right:12px;z-index:5;border:0;background:rgba(255,255,255,.06);
+      color:var(--text);width:32px;height:32px;border-radius:9px;font-size:17px;cursor:pointer}
+    .hint{font-size:10px;top:auto;bottom:96px}
+    .controls{bottom:12px;gap:10px;padding:10px 12px}
+    .sl input[type=range]{width:92px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="accent"></div>
+  <div>
+    <h1>電気回路</h1>
+    <div class="en">CIRCUIT · CURRENT</div>
+  </div>
+  <div class="sys"><span class="dot"></span>SYS ● ONLINE&nbsp;｜&nbsp;<span class="unit">電流</span></div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint"><b>電圧・抵抗</b>で粒の速さと明るさが変わる<br><b>スイッチ</b>を切ると回路が切れて消える</div>
+    <button class="panel-toggle" id="ptog">☰ 測定値</button>
+
+    <div class="controls">
+      <div class="seg" id="modeSeg">
+        <button data-m="single" class="on">基本</button>
+        <button data-m="series">直列</button>
+        <button data-m="parallel">並列</button>
+      </div>
+      <div class="sl"><label>電圧</label><input type="range" id="volt" min="0" max="6" step="0.5" value="4.5"><b id="voltv">4.5 V</b></div>
+      <div class="sl"><label>抵抗①</label><input type="range" id="r1" min="10" max="50" step="5" value="20"><b id="r1v">20 Ω</b></div>
+      <div class="sl r2 hide"><label>抵抗②</label><input type="range" id="r2" min="10" max="50" step="5" value="20"><b id="r2v">20 Ω</b></div>
+      <div class="toggle on" id="tgSw"><span>スイッチ</span><span class="sw"></span></div>
+      <div class="toggle on" id="tgDir"><span>向き</span><span class="sw"></span></div>
+    </div>
+  </div>
+
+  <aside id="aside">
+    <button class="panel-close" id="pclose">×</button>
+    <div class="tabbar">
+      <button data-tab="meter" class="on">測定値</button>
+      <button data-tab="ex">解説</button>
+      <button data-tab="quiz">クイズ</button>
+    </div>
+    <div class="panelbody" id="panelbody"></div>
+  </aside>
+</main>
+
+<script>
+/* ===== 状態 ===== */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let mode='single', V=4.5, R1=20, R2=20, closed=true, showDir=true;
+let DPR=1, cw=0, ch=0;
+const VW=660, VH=460;
+let phases=[];
+
+/* ===== サイズ ===== */
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  const r=cv.getBoundingClientRect(); cw=r.width; ch=r.height;
+  cv.width=cw*DPR; cv.height=ch*DPR;
+}
+window.addEventListener('resize',resize);
+
+/* ===== 回路の計算＋配置 ===== */
+function build(){
+  const on = closed && V>0;
+  let paths=[], bulbs=[], battery, sw, Itot=0, Rtot=0;
+
+  if(mode==='single'){
+    const xL=150,xR=510,yT=130,yB=330;
+    Rtot=R1; Itot = on? V/R1 : 0;
+    const loop=[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yT},{x:330,y:yT},{x:xR,y:yT},{x:xR,y:yB},{x:330,y:yB}];
+    paths=[{pts:loop,current:Itot}];
+    bulbs=[{x:330,y:yT,I:Itot,Vd:Itot*R1,P:Itot*Itot*R1,label:'豆電球'}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xR,y:230,horiz:false};
+  }
+  else if(mode==='series'){
+    const xL=150,xR=510,yT=130,yB=330;
+    Rtot=R1+R2; Itot = on? V/Rtot : 0;
+    const loop=[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yT},{x:250,y:yT},{x:400,y:yT},{x:xR,y:yT},{x:xR,y:yB},{x:330,y:yB}];
+    paths=[{pts:loop,current:Itot}];
+    bulbs=[{x:250,y:yT,I:Itot,Vd:Itot*R1,P:Itot*Itot*R1,label:'豆電球①'},
+           {x:400,y:yT,I:Itot,Vd:Itot*R2,P:Itot*Itot*R2,label:'豆電球②'}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xR,y:230,horiz:false};
+  }
+  else{ // parallel
+    const xL=170,xR=490,yB=360,yNode=240,yUp=150;
+    const I1 = on? V/R1 : 0, I2 = on? V/R2 : 0; Itot=I1+I2;
+    Rtot = 1/(1/R1+1/R2);
+    const mainIn=[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yNode}];
+    const br1=[{x:xL,y:yNode},{x:xL,y:yUp},{x:330,y:yUp},{x:xR,y:yUp},{x:xR,y:yNode}];
+    const br2=[{x:xL,y:yNode},{x:330,y:yNode},{x:xR,y:yNode}];
+    const mainOut=[{x:xR,y:yNode},{x:xR,y:yB},{x:330,y:yB}];
+    paths=[{pts:mainIn,current:Itot},{pts:br1,current:I1},{pts:br2,current:I2},{pts:mainOut,current:Itot}];
+    bulbs=[{x:330,y:yUp,I:I1,Vd:on?V:0,P:V*I1,label:'豆電球①'},
+           {x:330,y:yNode,I:I2,Vd:on?V:0,P:V*I2,label:'豆電球②'}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xL,y:300,horiz:false};
+  }
+  if(phases.length!==paths.length) phases=new Array(paths.length).fill(0);
+  return {paths,bulbs,battery,sw,Itot,Rtot};
+}
+
+/* ===== 幾何ヘルパ ===== */
+function pathLen(pts){let t=0;for(let i=0;i<pts.length-1;i++)t+=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);return t;}
+function ptAt(pts,t){
+  const total=pathLen(pts); let d=((t%1)+1)%1*total;
+  for(let i=0;i<pts.length-1;i++){
+    const seg=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);
+    if(d<=seg||i===pts.length-2){const f=seg?d/seg:0;
+      return {x:pts[i].x+(pts[i+1].x-pts[i].x)*f,y:pts[i].y+(pts[i+1].y-pts[i].y)*f,
+              ang:Math.atan2(pts[i+1].y-pts[i].y,pts[i+1].x-pts[i].x)};}
+    d-=seg;
+  }
+  return {...pts[pts.length-1],ang:0};
+}
+
+/* ===== 描画 ===== */
+function drawWire(pts){
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.strokeStyle='rgba(150,165,200,0.55)';ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
+}
+function drawDots(path){
+  const I=path.current; const len=pathLen(path.pts);
+  const n=Math.max(4,Math.round(len/42));
+  for(let k=0;k<n;k++){
+    const t=(phases[path._i]+k/n)%1;
+    const p=ptAt(path.pts,t);
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,6);
+    g.addColorStop(0,'rgba(180,245,255,1)');g.addColorStop(1,'rgba(95,211,224,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,5.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#dffaff';ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,Math.PI*2);ctx.fill();
+  }
+  if(showDir && I>0){
+    for(let k=0;k<Math.max(2,Math.round(len/150));k++){
+      const p=ptAt(path.pts,(k+0.5)/Math.max(2,Math.round(len/150)));
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.ang);
+      ctx.fillStyle='rgba(95,211,224,0.7)';ctx.beginPath();
+      ctx.moveTo(7,0);ctx.lineTo(-4,-4.5);ctx.lineTo(-4,4.5);ctx.closePath();ctx.fill();ctx.restore();
+    }
+  }
+}
+function drawBulb(b){
+  const br=Math.max(0,Math.min(1,b.P/1.5));
+  // glow
+  if(br>0.01){
+    const R=20+br*34;
+    const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,R);
+    g.addColorStop(0,`rgba(255,230,150,${0.25+br*0.6})`);g.addColorStop(0.5,`rgba(245,166,35,${0.15+br*0.3})`);g.addColorStop(1,'rgba(245,166,35,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,R,0,Math.PI*2);ctx.fill();
+  }
+  // 記号：丸＋×
+  ctx.beginPath();ctx.arc(b.x,b.y,15,0,Math.PI*2);
+  ctx.fillStyle=br>0.01?`rgba(255,${200+br*40|0},${120+br*60|0},1)`:'#1a1f30';ctx.fill();
+  ctx.strokeStyle=br>0.01?'#fff6d8':'rgba(150,165,200,0.7)';ctx.lineWidth=2.4;ctx.stroke();
+  const d=10.6;ctx.beginPath();
+  ctx.moveTo(b.x-d,b.y-d);ctx.lineTo(b.x+d,b.y+d);ctx.moveTo(b.x+d,b.y-d);ctx.lineTo(b.x-d,b.y+d);
+  ctx.strokeStyle=br>0.01?'rgba(120,80,10,0.6)':'rgba(150,165,200,0.5)';ctx.lineWidth=1.6;ctx.stroke();
+}
+function drawBattery(bt){
+  // 横向きワイヤ上：縦の板。長い線＝＋、短く太い線＝－
+  const x=bt.x,y=bt.y;
+  ctx.strokeStyle='#cdd6f0';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(x-9,y-15);ctx.lineTo(x-9,y+15);ctx.stroke(); // 長(＋)
+  ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(x+9,y-8);ctx.lineTo(x+9,y+8);ctx.stroke(); // 短(－)
+  ctx.fillStyle='#9aa6c4';ctx.font='13px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillText('＋',x-9,y+30);ctx.fillText('－',x+9,y+30);
+}
+function drawSwitch(sw){
+  const x=sw.x,y=sw.y;
+  if(!closed){ ctx.clearRect(x-9,y-15,27,30); } // 回路を断つ（配線に隙間）
+  ctx.fillStyle='#9aa6c4';
+  ctx.beginPath();ctx.arc(x,y+16,3.5,0,Math.PI*2);ctx.fill();      // 下接点
+  ctx.beginPath();ctx.arc(x,y-16,3.5,0,Math.PI*2);ctx.fill();      // 上接点
+  ctx.strokeStyle=closed?'#5fd3e0':'rgba(150,165,200,0.85)';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x,y+16);
+  if(closed) ctx.lineTo(x,y-16); else ctx.lineTo(x+16,y-8); // 開くとレバーが上がる
+  ctx.stroke();
+  if(!closed){ctx.fillStyle='#ff7a7a';ctx.font='12px Zen Kaku Gothic New';ctx.textAlign='left';ctx.fillText('切',x+14,y+22);}
+}
+
+/* ===== ループ ===== */
+let last=performance.now();
+function loop(t){
+  const dt=Math.min((t-last)/1000,0.05);last=t;
+  resizeIfNeeded();
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,cw,ch);
+  const s=Math.min(cw/VW,ch/VH);
+  ctx.save();ctx.translate((cw-VW*s)/2,(ch-VH*s)/2);ctx.scale(s,s);
+
+  const c=build();
+  c.paths.forEach((p,i)=>{p._i=i; phases[i]=(phases[i]+p.current*1.8*dt)%1;});
+  c.paths.forEach(p=>drawWire(p.pts));
+  c.paths.forEach(drawDots);
+  c.bulbs.forEach(drawBulb);
+  drawBattery(c.battery);
+  drawSwitch(c.sw);
+
+  ctx.restore();
+  if(activeTab==='meter') updateMeter(c);
+  requestAnimationFrame(loop);
+}
+let lastW=0,lastH=0;
+function resizeIfNeeded(){const r=cv.getBoundingClientRect();if(r.width!==lastW||r.height!==lastH){lastW=r.width;lastH=r.height;resize();}}
+
+/* ===== コントロール ===== */
+document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');mode=b.dataset.m;phases=[];
+  document.querySelector('.sl.r2').classList.toggle('hide',mode==='single');
+  if(activeTab!=='quiz')renderPanel();
+});
+const voltEl=document.getElementById('volt'),r1El=document.getElementById('r1'),r2El=document.getElementById('r2');
+function trackP(el){const mn=+el.min,mx=+el.max;el.style.setProperty('--p',((el.value-mn)/(mx-mn)*100)+'%');}
+voltEl.oninput=()=>{V=+voltEl.value;document.getElementById('voltv').textContent=V.toFixed(1)+' V';trackP(voltEl);};
+r1El.oninput=()=>{R1=+r1El.value;document.getElementById('r1v').textContent=R1+' Ω';trackP(r1El);};
+r2El.oninput=()=>{R2=+r2El.value;document.getElementById('r2v').textContent=R2+' Ω';trackP(r2El);};
+[voltEl,r1El,r2El].forEach(trackP);
+function bindToggle(id,fn){const el=document.getElementById(id);el.onclick=()=>{el.classList.toggle('on');fn(el.classList.contains('on'));};}
+bindToggle('tgSw',v=>closed=v);
+bindToggle('tgDir',v=>showDir=v);
+document.getElementById('ptog').onclick=()=>document.getElementById('aside').classList.add('open');
+document.getElementById('pclose').onclick=()=>document.getElementById('aside').classList.remove('open');
+
+/* ===== サイドパネル ===== */
+let activeTab='meter';
+document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>{
+  activeTab=b.dataset.tab;
+  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x.dataset.tab===activeTab));
+  renderPanel();document.getElementById('aside').classList.add('open');
+});
+function renderPanel(){
+  const body=document.getElementById('panelbody');
+  if(activeTab==='meter') body.innerHTML=meterHTML(build());
+  else if(activeTab==='ex') body.innerHTML=exHTML();
+  else { body.innerHTML=quizHTML(); bindQuiz(); }
+}
+function fmtA(x){return x.toFixed(2);}
+function meterHTML(c){
+  const modeName={single:'基本回路',series:'直列回路',parallel:'並列回路'}[mode];
+  let bulbsHTML='';
+  c.bulbs.forEach((b,i)=>{
+    const br=Math.max(0,Math.min(1,b.P/1.5));
+    bulbsHTML+=`<div class="bulb-card"><div class="top"><span class="bdot" id="bdot${i}" style="opacity:${0.3+br*0.7}"></span>${b.label}</div>
+      <div class="bvals"><span>電流 <b id="bI${i}">${fmtA(b.I)}</b> A</span><span>電圧 <b id="bV${i}">${b.Vd.toFixed(1)}</b> V</span></div>
+      <div class="bright-bar"><i id="bbar${i}" style="width:${(br*100).toFixed(0)}%"></i></div></div>`;
+  });
+  return `<div class="meter"><span class="k">回路の種類</span><span class="v jp amber">${modeName}</span></div>
+   <div class="meter"><span class="k">電池の電圧</span><span class="v"><span id="mV">${V.toFixed(1)}</span> <small>V</small></span></div>
+   <div class="meter"><span class="k">全体の電流</span><span class="v big"><span id="mI">${fmtA(c.Itot)}</span> <small>A</small></span></div>
+   <div class="meter"><span class="k">合成抵抗</span><span class="v"><span id="mR">${c.Rtot.toFixed(1)}</span> <small>Ω</small></span></div>
+   <div class="sub2">豆電球ごとの値</div>${bulbsHTML}
+   <div class="ohm"><div class="eq"><span id="oV">${V.toFixed(1)}V</span> = <span id="oI">${fmtA(c.Itot)}A</span> × <span id="oR">${c.Rtot.toFixed(1)}Ω</span></div>
+     <div class="lab">オームの法則　V ＝ I × R</div></div>`;
+}
+function exHTML(){
+  const common=`<h3>電流ってなに？</h3><p>青く流れる粒が電流のイメージです。粒の速さが電流の大きさ。電圧を上げる・抵抗を下げると粒が速くなり、豆電球が明るくなります（オームの法則 I＝V÷R）。スイッチを切ると回路が一周つながらず、電流は流れません。</p>`;
+  let body;
+  if(mode==='single')body=common+`<h3>基本回路</h3><div class="pt">電圧を2倍にすると電流も2倍。</div><div class="pt">抵抗を2倍にすると電流は半分。</div><div class="pt">電流は回路のどこでも同じ大きさ。</div>`;
+  else if(mode==='series')body=common+`<h3>直列回路のポイント</h3><div class="pt">電流はどこも<b>同じ</b>大きさ。</div><div class="pt">電圧は各豆電球に<b>分かれる</b>（足すと電池の電圧）。</div><div class="pt">合成抵抗は和（R＝R₁＋R₂）で<b>大きく</b>なるため、電流は流れにくく、豆電球は1個のときより<b>暗い</b>。</div>`;
+  else body=common+`<h3>並列回路のポイント</h3><div class="pt">各豆電球にかかる電圧は<b>同じ</b>（電池の電圧と等しい）。</div><div class="pt">電流は枝分かれして<b>分かれる</b>（足すと全体の電流）。</div><div class="pt">合成抵抗は各抵抗より<b>小さく</b>なり、全体の電流は<b>増える</b>。各豆電球は1個のときと同じ明るさ。</div>`;
+  return `<div class="ex">${body}</div>`;
+}
+
+/* ===== クイズ ===== */
+const QBANK=[
+ {q:'豆電球を直列に2個つなぐと、1個のときより明るさは？',o:['明るくなる','暗くなる','変わらない'],a:1,e:'直列は合成抵抗が大きくなり電流が減るので暗くなります。'},
+ {q:'豆電球を並列に2個つなぐと、それぞれの明るさは1個のときと比べて？',o:['明るくなる','暗くなる','ほぼ同じ'],a:2,e:'並列では各電球に電池と同じ電圧がかかるので、明るさはほぼ同じです。'},
+ {q:'直列回路で、各点を流れる電流の大きさは？',o:['どこも同じ','場所で変わる','電池の近くだけ大きい'],a:0,e:'直列は道が1本なので、電流はどこも同じ大きさです。'},
+ {q:'並列回路で、各豆電球にかかる電圧は？',o:['電池の電圧と同じ','半分ずつに分かれる','枝で変わる'],a:0,e:'並列では各枝に電池の電圧がそのままかかります。'},
+ {q:'電圧を2倍にすると（抵抗そのまま）、電流は？',o:['2倍','半分','変わらない'],a:0,e:'I＝V÷R。電圧2倍で電流も2倍です。'},
+ {q:'抵抗を2倍にすると（電圧そのまま）、電流は？',o:['2倍','半分','変わらない'],a:1,e:'I＝V÷R。抵抗2倍で電流は半分です。'},
+ {q:'直列の合成抵抗は、もとの抵抗1個より？',o:['大きくなる','小さくなる','同じ'],a:0,e:'直列は R＝R₁＋R₂ で大きくなります。'},
+ {q:'並列の合成抵抗は、もとの抵抗1個より？',o:['大きくなる','小さくなる','同じ'],a:1,e:'並列は道が増えるぶん、合成抵抗は小さくなります。'},
+];
+let quiz=null;
+function newQuiz(){return {active:true,order:[...Array(QBANK.length).keys()].sort(()=>Math.random()-0.5).slice(0,6),idx:0,score:0,answered:null};}
+function quizHTML(){
+  if(!quiz||!quiz.active)return `<div class="empty"><span class="big">📝</span>電流クイズに挑戦！<br>予想してから答えよう。<button class="btn primary" id="qstart" style="margin-top:14px">クイズを始める</button></div>`;
+  const Q=QBANK[quiz.order[quiz.idx]];
+  const opts=Q.o.map((o,i)=>{
+    let cls='quiz-opt';
+    if(quiz.answered!=null){if(i===Q.a)cls+=' ok';else if(i===quiz.answered)cls+=' ng';}
+    return `<button class="${cls}" data-i="${i}" ${quiz.answered!=null?'disabled':''}>${o}</button>`;
+  }).join('');
+  let fb='';
+  if(quiz.answered!=null){const ok=quiz.answered===Q.a;
+    fb=`<div class="quiz-fb show ${ok?'ok':'ng'}"><span class="lab">${ok?'正解':'おしい'}</span>${Q.e}</div>`;}
+  const next=quiz.answered!=null?`<button class="btn primary" id="qnext">${quiz.idx<quiz.order.length-1?'次の問題 →':'結果を見る'}</button>`:'';
+  return `<div class="quiz-prog">Q ${quiz.idx+1} / ${quiz.order.length} ・ SCORE ${quiz.score}</div>
+    <div class="quiz-q"><span class="num">Q${quiz.idx+1}</span>${Q.q}</div>${opts}${fb}${next}`;
+}
+function bindQuiz(){
+  const s=document.getElementById('qstart');if(s)s.onclick=()=>{quiz=newQuiz();renderPanel();};
+  document.querySelectorAll('.quiz-opt').forEach(b=>b.onclick=()=>{
+    if(quiz.answered!=null)return;quiz.answered=+b.dataset.i;
+    if(quiz.answered===QBANK[quiz.order[quiz.idx]].a)quiz.score++;renderPanel();
+  });
+  const n=document.getElementById('qnext');if(n)n.onclick=()=>{
+    if(quiz.idx<quiz.order.length-1){quiz.idx++;quiz.answered=null;renderPanel();}
+    else{
+      const sc=quiz.score,tot=quiz.order.length;const msg=sc===tot?'パーフェクト！回路マスター⚡':sc>=tot*0.6?'よくできました！':'解説タブを見て復習しよう。';
+      document.getElementById('panelbody').innerHTML=`<div class="quiz-result"><div class="score">${sc}/${tot}</div><div class="lab">${msg}</div><button class="btn primary" id="qretry">もう一度</button></div>`;
+      document.getElementById('qretry').onclick=()=>{quiz=newQuiz();renderPanel();};
+      quiz.active=false;
+    }
+  };
+}
+function updateMeter(c){
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  // 構造が無ければ（モード切替直後など）作り直す
+  if(!document.getElementById('mI')){document.getElementById('panelbody').innerHTML=meterHTML(c);return;}
+  set('mV',V.toFixed(1));set('mI',fmtA(c.Itot));set('mR',c.Rtot.toFixed(1));
+  set('oV',V.toFixed(1)+'V');set('oI',fmtA(c.Itot)+'A');set('oR',c.Rtot.toFixed(1)+'Ω');
+  c.bulbs.forEach((b,i)=>{
+    const br=Math.max(0,Math.min(1,b.P/1.5));
+    set('bI'+i,fmtA(b.I));set('bV'+i,b.Vd.toFixed(1));
+    const bar=document.getElementById('bbar'+i);if(bar)bar.style.width=(br*100).toFixed(0)+'%';
+    const dot=document.getElementById('bdot'+i);if(dot)dot.style.opacity=0.3+br*0.7;
+  });
+  // 豆電球の数がHTMLと食い違ったら作り直す（モード切替）
+  if(document.querySelectorAll('.bulb-card').length!==c.bulbs.length)document.getElementById('panelbody').innerHTML=meterHTML(c);
+}
+
+/* ===== 起動 ===== */
+resize();renderPanel();requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>電池のしくみ（ダニエル電池）｜まなびラボ</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050b;
+  --panel:rgba(14,18,32,0.85);
+  --panel-line:rgba(120,150,210,0.18);
+  --amber:#f5a623;
+  --amber-soft:#ffce7a;
+  --cyan:#5fd3e0;
+  --chem:#b58cff;
+  --chem-soft:#d6c2ff;
+  --text:#e8ecf6;
+  --dim:#8893ad;
+  --good:#5fe09a;
+  --bad:#ff7a7a;
+  --jp:'Zen Kaku Gothic New',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  background:
+    radial-gradient(1100px 700px at 22% -10%, rgba(181,140,255,0.10), transparent 60%),
+    radial-gradient(900px 800px at 110% 120%, rgba(95,168,230,0.07), transparent 55%),
+    var(--bg);
+  color:var(--text);font-family:var(--jp);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
+}
+header{display:flex;align-items:center;gap:14px;padding:11px 18px;border-bottom:1px solid var(--panel-line);
+  background:rgba(6,8,16,0.6);backdrop-filter:blur(8px);flex:none}
+header .accent{width:4px;height:34px;border-radius:3px;background:linear-gradient(var(--chem),var(--chem-soft));box-shadow:0 0 14px rgba(181,140,255,.5)}
+header h1{font-size:17px;font-weight:700;letter-spacing:.03em}
+header .en{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.18em;margin-top:1px}
+header .sys{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;align-items:center;gap:7px;letter-spacing:.08em}
+header .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+header .unit{color:var(--chem-soft)}
+
+main{flex:1;display:grid;grid-template-columns:1fr 318px;min-height:0}
+.stage{position:relative;overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;top:12px;left:14px;font-size:11px;line-height:1.7;color:var(--dim);
+  font-family:var(--mono);letter-spacing:.02em;pointer-events:none;background:rgba(6,8,16,.4);
+  padding:6px 9px;border-radius:8px;border:1px solid var(--panel-line)}
+.hint b{color:var(--chem-soft);font-weight:600}
+
+.controls{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;
+  gap:13px;flex-wrap:wrap;justify-content:center;background:var(--panel);border:1px solid var(--panel-line);
+  border-radius:16px;padding:11px 16px;backdrop-filter:blur(10px);max-width:95%;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.seg{display:flex;background:rgba(0,0,0,.3);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;color:var(--dim);font-family:var(--jp);font-size:12px;font-weight:500;
+  padding:6px 12px;border-radius:8px;cursor:pointer;transition:.18s}
+.seg button.on{background:linear-gradient(var(--chem),#8f63e0);color:#160a2e;font-weight:700;box-shadow:0 0 12px rgba(181,140,255,.35)}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--dim)}
+.sw{width:38px;height:21px;border-radius:12px;background:rgba(255,255,255,.14);position:relative;transition:.2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#cfd6e6;transition:.2s}
+.toggle.on .sw{background:var(--chem)}
+.toggle.on .sw::after{left:19px;background:#160a2e}
+.toggle.on{color:var(--text)}
+
+aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);display:flex;flex-direction:column;min-height:0}
+.tabbar{display:flex;border-bottom:1px solid var(--panel-line);flex:none}
+.tabbar button{flex:1;border:0;background:transparent;color:var(--dim);font-family:var(--jp);font-size:13px;font-weight:500;
+  padding:13px 0;cursor:pointer;position:relative;transition:.18s}
+.tabbar button.on{color:var(--text)}
+.tabbar button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:2px;border-radius:2px;background:var(--chem);box-shadow:0 0 8px var(--chem)}
+.panelbody{flex:1;overflow-y:auto;padding:16px}
+.tabpane{display:none;animation:fade .25s}
+.tabpane.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.phasehead{display:flex;align-items:center;gap:13px;margin-bottom:6px}
+#mini{flex:none;border-radius:8px;background:rgba(0,0,0,.25)}
+.phasehead .pname{font-size:17px;font-weight:700;line-height:1.25}
+.phasehead .pyomi{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em;margin-top:3px}
+
+.meter{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:11px 13px;margin-top:9px;
+  border:1px solid var(--panel-line);border-radius:11px;background:rgba(255,255,255,.02)}
+.meter .k{font-size:12px;color:var(--dim);flex:none}
+.meter .v{font-family:var(--mono);font-size:13px;color:var(--text);text-align:right}
+.meter .v small{color:var(--dim);font-size:11px}
+.meter .v.chem{color:var(--chem-soft)}
+.meter .v.jp{font-family:var(--jp);font-size:12.5px}
+.meter.minus{border-color:rgba(95,224,154,.0)}
+.eq{font-family:var(--mono);font-size:12px;color:var(--chem-soft);letter-spacing:.02em}
+
+.pt{display:flex;gap:9px;margin-bottom:13px;font-size:13.5px;line-height:1.72}
+.pt .b{color:var(--chem);flex:none;margin-top:1px}
+.pt b{color:var(--chem-soft);font-weight:700}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin-bottom:8px}
+.legend .dotc{width:13px;height:13px;border-radius:50%;flex:none;border:1px solid rgba(255,255,255,.25)}
+.note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:6px;padding:11px 13px;border-left:2px solid var(--amber);
+  background:rgba(245,166,35,.05);border-radius:0 8px 8px 0}
+
+.quiz-q{font-size:14.5px;font-weight:500;line-height:1.7;margin-bottom:14px}
+.quiz-prog{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:10px}
+.quiz-opt{display:block;width:100%;text-align:left;border:1px solid var(--panel-line);background:rgba(255,255,255,.02);
+  color:var(--text);font-family:var(--jp);font-size:13.5px;padding:12px 14px;border-radius:11px;margin-bottom:9px;cursor:pointer;transition:.15s}
+.quiz-opt:hover{border-color:rgba(120,150,210,.45);background:rgba(255,255,255,.05)}
+.quiz-opt.ok{border-color:var(--good);background:rgba(95,224,154,.12);color:var(--good)}
+.quiz-opt.ng{border-color:var(--bad);background:rgba(255,122,122,.12);color:var(--bad)}
+.quiz-opt:disabled{cursor:default}
+.quiz-fb{font-size:13px;line-height:1.7;margin-top:10px;padding:12px 14px;border-radius:11px;display:none}
+.quiz-fb.show{display:block}
+.quiz-fb.ok{background:rgba(95,224,154,.1);border:1px solid rgba(95,224,154,.3)}
+.quiz-fb.ng{background:rgba(255,122,122,.1);border:1px solid rgba(255,122,122,.3)}
+.quiz-fb .lab{font-weight:700;margin-right:6px}
+.quiz-fb.ok .lab{color:var(--good)}.quiz-fb.ng .lab{color:var(--bad)}
+.btn{border:1px solid var(--panel-line);background:rgba(255,255,255,.04);color:var(--text);font-family:var(--jp);
+  font-size:13px;font-weight:600;padding:11px 18px;border-radius:11px;cursor:pointer;margin-top:6px;transition:.15s}
+.btn:hover{background:rgba(255,255,255,.09)}
+.btn.primary{background:linear-gradient(var(--chem),#8f63e0);color:#160a2e;border:0;box-shadow:0 0 14px rgba(181,140,255,.3)}
+.quiz-result{text-align:center;padding:18px 0}
+.quiz-result .score{font-family:var(--mono);font-size:42px;font-weight:600;color:var(--chem-soft)}
+.quiz-result .lab{font-size:13px;color:var(--dim);margin:6px 0 18px}
+
+.panel-toggle{display:none}
+@media(max-width:820px){
+  main{grid-template-columns:1fr}
+  aside{position:fixed;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);background:rgba(8,11,20,.97);backdrop-filter:blur(12px)}
+  aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+  .panel-toggle{display:flex;position:absolute;top:12px;right:14px;z-index:20;align-items:center;gap:6px;
+    border:1px solid var(--panel-line);background:var(--panel);color:var(--text);font-family:var(--jp);font-size:12px;
+    font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+  .panel-close{display:block;position:absolute;top:10px;right:12px;z-index:5;border:0;background:rgba(255,255,255,.06);
+    color:var(--text);width:32px;height:32px;border-radius:9px;font-size:17px;cursor:pointer}
+  .hint{font-size:10px;top:auto;bottom:96px}
+  .controls{bottom:12px;gap:10px;padding:10px 12px}
+}
+.panel-close{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="accent"></div>
+  <div>
+    <h1>電池のしくみ</h1>
+    <div class="en">DANIELL CELL · IONS</div>
+  </div>
+  <div class="sys"><span class="dot"></span>SYS ● ONLINE&nbsp;｜&nbsp;<span class="unit">化学</span></div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint">スイッチをタップ＝<b>回路を入/切</b><br>「拡大」で<b>電極の中を見る</b></div>
+    <button class="panel-toggle" id="ptog">☰ データ</button>
+
+    <div class="controls">
+      <div class="seg" id="swSeg">
+        <button data-on="0" class="on">⏼ 切</button>
+        <button data-on="1">⚡ 入</button>
+      </div>
+      <div class="seg" id="viewSeg">
+        <button data-view="macro" class="on">全体</button>
+        <button data-view="micro">拡大</button>
+      </div>
+      <div class="toggle on" id="eTog"><span>電子 e⁻</span><span class="sw"></span></div>
+      <div class="toggle on" id="ionTog"><span>イオン</span><span class="sw"></span></div>
+    </div>
+  </div>
+
+  <aside id="aside">
+    <button class="panel-close" id="pclose">×</button>
+    <div class="tabbar">
+      <button class="on" data-tab="data">電池データ</button>
+      <button data-tab="explain">解説</button>
+      <button data-tab="quiz">クイズ</button>
+    </div>
+    <div class="panelbody">
+
+      <div class="tabpane on" id="tab-data">
+        <div class="phasehead">
+          <canvas id="mini" width="74" height="52"></canvas>
+          <div>
+            <div class="pname" id="pName">ダニエル電池</div>
+            <div class="pyomi" id="pYomi">Zn / Cu</div>
+          </div>
+        </div>
+        <div class="meter"><span class="k">負極（−）</span><span class="v jp">亜鉛 Zn・<span style="color:var(--bad)">酸化</span>・とける</span></div>
+        <div class="meter"><span class="k">　反応</span><span class="v eq">Zn → Zn²⁺ + 2e⁻</span></div>
+        <div class="meter"><span class="k">正極（＋）</span><span class="v jp">銅 Cu・<span style="color:var(--good)">還元</span>・付着</span></div>
+        <div class="meter"><span class="k">　反応</span><span class="v eq">Cu²⁺ + 2e⁻ → Cu</span></div>
+        <div class="meter"><span class="k">電子の向き（導線）</span><span class="v jp chem" id="mE">亜鉛 → 銅</span></div>
+        <div class="meter"><span class="k">電流の向き</span><span class="v jp" id="mI">銅 → 亜鉛</span></div>
+        <div class="meter"><span class="k">電圧（起電力）</span><span class="v chem" id="mV">0 <small>V</small></span></div>
+        <div class="meter"><span class="k">全体の反応</span><span class="v eq">Zn + Cu²⁺ → Zn²⁺ + Cu</span></div>
+        <div class="note" id="mNote">スイッチを入れると電子が亜鉛→銅へ流れて豆電球が光る。CuSO₄水溶液の青色は Cu²⁺ が減るので少しずつうすくなる。</div>
+      </div>
+
+      <div class="tabpane" id="tab-explain">
+        <div class="legend"><span class="dotc" style="background:#ffe066"></span>電子 e⁻（導線の中を流れる）</div>
+        <div class="legend"><span class="dotc" style="background:#cfd6e6"></span>Zn²⁺（亜鉛イオン・陽イオン）</div>
+        <div class="legend"><span class="dotc" style="background:#57a6e6"></span>Cu²⁺（銅イオン・陽イオン）</div>
+        <div class="legend"><span class="dotc" style="background:#ff8fa3"></span>SO₄²⁻（硫酸イオン・陰イオン）</div>
+        <div class="pt"><span class="b">●</span><span>電池は<b>化学変化のエネルギー</b>を電気エネルギーに変える装置。2種類の金属を電解液にひたして導線でつなぐと電流がとり出せる。</span></div>
+        <div class="pt"><span class="b">●</span><span>イオンへのなりやすさ（<b>イオン化傾向</b>）は <b>Zn &gt; Cu</b>。なりやすい亜鉛が電子を残して Zn²⁺ となってとけ出すので、亜鉛が<b>−極</b>になる。</span></div>
+        <div class="pt"><span class="b">●</span><span><b>−極（亜鉛）</b>：Zn → Zn²⁺ + 2e⁻（<b>酸化</b>）。残った電子が導線を通って銅へ。これが電流のもと（電流の向きは電子と逆）。</span></div>
+        <div class="pt"><span class="b">●</span><span><b>＋極（銅）</b>：溶液中の Cu²⁺ が電子を受けとり Cu²⁺ + 2e⁻ → Cu（<b>還元</b>）。銅が表面につき、青色がうすくなる。</span></div>
+        <div class="pt"><span class="b">●</span><span>溶液の中では<b>イオンが移動</b>して電気を運ぶ。陽イオンは＋極側へ、陰イオンは−極側へ。<b>素焼き板</b>は2つの水溶液が混ざるのを防ぎつつイオンを通す。</span></div>
+        <div class="note">確かめ方：スイッチを入/切して、流れる⇄止まるを見よう。「拡大」では、亜鉛が Zn²⁺ になってとけ出し、銅イオンが電子を受けとって銅になる原子レベルの出入りが見られる。</div>
+      </div>
+
+      <div class="tabpane" id="tab-quiz"><div id="quizArea"></div></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   電池のしくみ（ダニエル電池） / まなびラボ
+   ============================================================ */
+const TAU=Math.PI*2;
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const VW=640, VH=460;
+let scale=1, ox=0, oy=0, DPR=1, tNow=0;
+
+/* 色 */
+const COL={ zn:'#b9c2cc', znDark:'#7f8893', cu:'#d98a5a', cuDark:'#a85f38',
+  e:'#ffe066', znIon:'#cfd6e6', cuIon:'#57a6e6', so4:'#ff8fa3',
+  wire:'#9aa3b8', glass:'rgba(150,170,210,0.5)' };
+
+const state={ on:false, view:'macro', showE:true, showIon:true, blue:1.0 };
+
+/* ---------- 配置（仮想座標） ---------- */
+const surfY=235, botY=398;                 // 液面・底
+const beakerL=150, beakerR=490;            // ビーカー左右
+const divX=320;                            // 素焼き板
+const znX=232, cuX=408;                    // 電極の中心x
+const plateTop=196, plateBot=380;          // 電極の上端・下端
+/* 導線の経路（電子はこの上を 亜鉛→銅 へ流れる） */
+const WIRE=[ {x:znX,y:plateTop}, {x:znX,y:108}, {x:cuX,y:108}, {x:cuX,y:plateTop} ];
+const SW={x:286,y:108,w:30,h:24};          // スイッチ位置
+const BULB={x:362,y:108,r:13};             // 豆電球
+
+/* 導線の累積長 */
+let wireLen=[], wireTotal=0;
+(function(){ let s=0; wireLen.push(0);
+  for(let i=1;i<WIRE.length;i++){ s+=Math.hypot(WIRE[i].x-WIRE[i-1].x,WIRE[i].y-WIRE[i-1].y); wireLen.push(s); }
+  wireTotal=s;
+})();
+function wireAt(d){
+  for(let i=1;i<WIRE.length;i++){ if(d<=wireLen[i]){
+    const t=(d-wireLen[i-1])/(wireLen[i]-wireLen[i-1]);
+    return { x:WIRE[i-1].x+(WIRE[i].x-WIRE[i-1].x)*t, y:WIRE[i-1].y+(WIRE[i].y-WIRE[i-1].y)*t }; } }
+  return WIRE[WIRE.length-1];
+}
+
+/* ---------- 溶液中のイオン（初期化は一度だけ） ---------- */
+let ions=[];
+function rand(a,b){ return a+Math.random()*(b-a); }
+function initIons(){
+  ions=[];
+  // 左：ZnSO4（Zn²⁺ と SO4²⁻）／右：CuSO4（Cu²⁺ と SO4²⁻）
+  for(let i=0;i<7;i++) ions.push({t:'znIon',x:rand(beakerL+18,divX-16),y:rand(surfY+16,botY-14)});
+  for(let i=0;i<6;i++) ions.push({t:'so4', x:rand(beakerL+18,divX-16),y:rand(surfY+16,botY-14)});
+  for(let i=0;i<8;i++) ions.push({t:'cuIon',x:rand(divX+16,beakerR-18),y:rand(surfY+16,botY-14)});
+  for(let i=0;i<6;i++) ions.push({t:'so4', x:rand(divX+16,beakerR-18),y:rand(surfY+16,botY-14)});
+  for(const io of ions){ io.vx=rand(-6,6); io.vy=rand(-5,5); io.ph=rand(0,TAU); }
+}
+initIons();
+function stepIons(dt){
+  if(!state.on) return;
+  for(const io of ions){
+    const left = io.x < divX;
+    // 陽イオン→＋極(右,銅)側へ、陰イオン→−極(左,亜鉛)側へ ゆるやかにドリフト
+    const bias = (io.t==='so4') ? -7 : 7;
+    io.vx += bias*dt*0.8 + rand(-8,8)*dt;
+    io.vy += rand(-8,8)*dt;
+    io.vx*=0.96; io.vy*=0.96;
+    io.x += io.vx*dt*6; io.y += io.vy*dt*6;
+    // 境界（自分の側の中だけで動く：素焼き板で仕切られている表現）
+    const xmin = left? beakerL+14 : divX+12, xmax = left? divX-12 : beakerR-14;
+    if(io.x<xmin){io.x=xmin;io.vx=Math.abs(io.vx);}
+    if(io.x>xmax){io.x=xmax;io.vx=-Math.abs(io.vx);}
+    if(io.y<surfY+14){io.y=surfY+14;io.vy=Math.abs(io.vy);}
+    if(io.y>botY-12){io.y=botY-12;io.vy=-Math.abs(io.vy);}
+  }
+}
+
+/* ============================================================
+   汎用描画
+   ============================================================ */
+function txt(s,x,y,size,col,align,weight){
+  ctx.save(); ctx.font=(weight||'600')+' '+(size||'12px')+" 'Zen Kaku Gothic New',sans-serif";
+  ctx.textAlign=align||'center'; ctx.textBaseline='middle'; ctx.fillStyle=col||'#e8ecf6'; ctx.fillText(s,x,y); ctx.restore();
+}
+function mono(s,x,y,size,col,align){
+  ctx.save(); ctx.font='600 '+(size||'11px')+" 'JetBrains Mono',monospace";
+  ctx.textAlign=align||'center'; ctx.textBaseline='middle'; ctx.fillStyle=col||'#e8ecf6'; ctx.fillText(s,x,y); ctx.restore();
+}
+function ionDot(x,y,col,sign,label){
+  ctx.save(); ctx.shadowColor=col; ctx.shadowBlur=8; ctx.fillStyle=col;
+  ctx.beginPath(); ctx.arc(x,y,8,0,TAU); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(10,12,20,0.85)'; ctx.font="700 9px 'JetBrains Mono'"; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(sign,x,y-0.5);
+  if(label){ ctx.fillStyle=col; ctx.font="600 8px 'JetBrains Mono'"; ctx.fillText(label,x,y+13); }
+  ctx.restore();
+}
+function eDot(x,y){
+  ctx.save(); ctx.shadowColor=COL.e; ctx.shadowBlur=9; ctx.fillStyle=COL.e;
+  ctx.beginPath(); ctx.arc(x,y,4.4,0,TAU); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle='#3a2e00'; ctx.font="700 7px 'JetBrains Mono'"; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('−',x,y); ctx.restore();
+}
+function arrow(x1,y1,x2,y2,col){
+  ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-9*Math.cos(a-0.4),y2-9*Math.sin(a-0.4));
+  ctx.lineTo(x2-9*Math.cos(a+0.4),y2-9*Math.sin(a+0.4)); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+/* ============================================================
+   全体ビュー
+   ============================================================ */
+function drawMacro(){
+  /* ビーカー */
+  ctx.save();
+  ctx.strokeStyle=COL.glass; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(beakerL,surfY-26); ctx.lineTo(beakerL,botY); ctx.lineTo(beakerR,botY); ctx.lineTo(beakerR,surfY-26); ctx.stroke();
+  ctx.restore();
+
+  /* 溶液（左:ZnSO4 ほぼ無色／右:CuSO4 青） */
+  ctx.save();
+  ctx.fillStyle='rgba(205,214,230,0.05)';
+  ctx.fillRect(beakerL+2,surfY,divX-beakerL-2,botY-surfY-1);
+  ctx.fillStyle='rgba(70,150,225,'+(0.06+0.20*state.blue)+')';
+  ctx.fillRect(divX+1,surfY,beakerR-divX-3,botY-surfY-1);
+  // 液面
+  ctx.strokeStyle='rgba(160,180,220,0.4)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(beakerL+2,surfY); ctx.lineTo(beakerR-2,surfY); ctx.stroke();
+  ctx.restore();
+  txt('硫酸亜鉛水溶液 ZnSO₄', (beakerL+divX)/2, botY+16, '10px', 'rgba(180,190,210,.7)');
+  txt('硫酸銅水溶液 CuSO₄', (divX+beakerR)/2, botY+16, '10px', 'rgba(120,180,235,.85)');
+
+  /* 素焼き板 */
+  ctx.save(); ctx.strokeStyle='rgba(200,205,220,0.55)'; ctx.lineWidth=4; ctx.setLineDash([2,4]);
+  ctx.beginPath(); ctx.moveTo(divX,surfY-4); ctx.lineTo(divX,botY); ctx.stroke(); ctx.restore();
+  txt('素焼き板', divX, surfY-14, '9px', 'rgba(190,195,210,.75)');
+
+  /* イオン */
+  if(state.showIon){
+    for(const io of ions){
+      if(io.t==='znIon') ionDot(io.x,io.y,COL.znIon,'＋','Zn²⁺');
+      else if(io.t==='cuIon') ionDot(io.x,io.y,COL.cuIon,'＋','Cu²⁺');
+      else ionDot(io.x,io.y,COL.so4,'－','SO₄²⁻');
+    }
+  }
+
+  /* 電極 */
+  drawPlate(znX, COL.zn, COL.znDark, '亜鉛板', '−', '#dfe6ee');
+  drawPlate(cuX, COL.cu, COL.cuDark, '銅板', '＋', '#ffd8c0');
+
+  /* 導線 */
+  ctx.save(); ctx.strokeStyle=COL.wire; ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(WIRE[0].x,WIRE[0].y);
+  // スイッチで切れている場合は手前で止める
+  if(state.on){ for(let i=1;i<WIRE.length;i++) ctx.lineTo(WIRE[i].x,WIRE[i].y); ctx.stroke(); }
+  else{
+    ctx.lineTo(WIRE[1].x,WIRE[1].y); ctx.lineTo(SW.x-SW.w/2,SW.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(SW.x+SW.w/2,SW.y); ctx.lineTo(WIRE[2].x,WIRE[2].y); ctx.lineTo(WIRE[3].x,WIRE[3].y); ctx.stroke();
+  }
+  ctx.restore();
+
+  drawBulb(); drawSwitch();
+
+  /* 電子の流れ（導線の上） */
+  if(state.on && state.showE){
+    const gap=46;
+    for(let d=(tNow*150)%gap; d<wireTotal; d+=gap){ const p=wireAt(d); eDot(p.x,p.y); }
+  }
+
+  /* 向きの矢印＆ラベル */
+  if(state.on){
+    arrow(znX+10,150, cuX-10,150, COL.e);
+    txt('電子 e⁻', (znX+cuX)/2, 138, '10px', COL.e);
+    txt('電流の向き →（電子と逆）', (znX+cuX)/2, 92, '9px', 'rgba(214,194,255,.85)');
+  }else{
+    txt('スイッチ「切」：電流は流れない', (znX+cuX)/2, 150, '12px', 'rgba(180,190,210,.8)');
+  }
+
+  /* 電極ラベル＋極性 */
+  txt('溶ける', znX, plateBot+14, '9px', 'rgba(255,140,150,.85)');
+  txt('銅が付着', cuX, plateBot+14, '9px', 'rgba(120,210,150,.9)');
+}
+
+function drawPlate(x, c1, c2, name, sign, signCol){
+  ctx.save();
+  const g=ctx.createLinearGradient(x-8,0,x+8,0); g.addColorStop(0,c2); g.addColorStop(.5,c1); g.addColorStop(1,c2);
+  ctx.fillStyle=g; ctx.fillRect(x-7,plateTop,14,plateBot-plateTop);
+  ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=1; ctx.strokeRect(x-7,plateTop,14,plateBot-plateTop);
+  ctx.restore();
+  // 極ラベル
+  ctx.save();
+  ctx.fillStyle=signCol; ctx.font="700 16px 'JetBrains Mono'"; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(sign, x, plateTop-14);
+  ctx.restore();
+  txt(name, x, plateTop-32, '11px', '#e8ecf6');
+}
+
+function drawBulb(){
+  ctx.save();
+  if(state.on){
+    const pulse=0.7+0.3*Math.sin(tNow*8);
+    const g=ctx.createRadialGradient(BULB.x,BULB.y,1,BULB.x,BULB.y,30);
+    g.addColorStop(0,'rgba(255,243,180,'+(0.9*pulse)+')'); g.addColorStop(.5,'rgba(255,210,90,'+(0.35*pulse)+')'); g.addColorStop(1,'rgba(255,210,90,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(BULB.x,BULB.y,30,0,TAU); ctx.fill();
+  }
+  ctx.fillStyle=state.on?'#fff3b0':'rgba(150,160,180,0.5)';
+  ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.arc(BULB.x,BULB.y,BULB.r,0,TAU); ctx.fill(); ctx.stroke();
+  // フィラメント
+  ctx.strokeStyle=state.on?'#c9821a':'rgba(90,100,120,.7)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(BULB.x-5,BULB.y+3); ctx.lineTo(BULB.x-2,BULB.y-4); ctx.lineTo(BULB.x+2,BULB.y+4); ctx.lineTo(BULB.x+5,BULB.y-3); ctx.stroke();
+  ctx.restore();
+}
+function drawSwitch(){
+  ctx.save();
+  // 端子
+  ctx.fillStyle=COL.wire;
+  ctx.beginPath(); ctx.arc(SW.x-SW.w/2,SW.y,3,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(SW.x+SW.w/2,SW.y,3,0,TAU); ctx.fill();
+  // レバー
+  ctx.strokeStyle=state.on?COL.chem:'#c9cfdb'; ctx.lineWidth=3; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(SW.x-SW.w/2,SW.y);
+  if(state.on) ctx.lineTo(SW.x+SW.w/2,SW.y);
+  else ctx.lineTo(SW.x+SW.w/2-4,SW.y-15);
+  ctx.stroke();
+  ctx.restore();
+  txt('スイッチ', SW.x, SW.y-26, '9px', 'rgba(190,195,210,.8)');
+}
+
+/* ============================================================
+   拡大ビュー（電極の中：原子・イオン・電子の出入り）
+   ============================================================ */
+function microPanel(x0,w,title,color,sub){
+  ctx.save();
+  ctx.strokeStyle='rgba(120,150,210,.25)'; ctx.lineWidth=1; ctx.fillStyle='rgba(255,255,255,.015)';
+  ctx.beginPath(); ctx.rect(x0,70,w,300); ctx.fill(); ctx.stroke(); ctx.restore();
+  txt(title, x0+w/2, 56, '13px', color);
+  txt(sub, x0+w/2, 388, '11px', 'rgba(180,190,210,.8)');
+}
+function drawMicro(){
+  const onf = state.on?1:0;
+  const ph = (tNow*0.6)%1;     // 0..1 ループ
+
+  /* ===== 左：亜鉛板（−極） 酸化 ===== */
+  microPanel(70,230,'亜鉛板（−極）・酸化','#dfe6ee','Zn → Zn²⁺ + 2e⁻');
+  const zL=92;                                  // 金属面x
+  // 金属の塊（原子格子）
+  ctx.save(); ctx.fillStyle='rgba(185,194,204,0.5)'; ctx.fillRect(70,90,zL-70,260); ctx.restore();
+  for(let r=0;r<8;r++)for(let c=0;c<2;c++){
+    const ax=76+c*9, ay=100+r*32+ (c?6:0);
+    metalAtom(ax,ay,COL.zn,'Zn');
+  }
+  // とけ出す Zn²⁺（液側へ）
+  if(state.on){
+    for(let i=0;i<3;i++){
+      const p=(ph + i/3)%1;
+      const x=zL+6 + p*120, y=150+i*60;
+      ionDot(x,y,COL.znIon,'＋', p>0.3?'Zn²⁺':'');
+    }
+    // 残った電子が金属内を上へ→導線へ
+    for(let i=0;i<3;i++){
+      const p=(ph + i/3)%1; eDot(zL-8, 350 - p*250);
+    }
+    arrow(zL-8,84, zL-8,64, COL.e); txt('導線へ', zL-8, 50, '9px', COL.e);
+  }
+  txt('Zn → Zn²⁺ + 2e⁻', 70+230/2, 410, '12px', '#dfe6ee');
+
+  /* ===== 右：銅板（＋極） 還元 ===== */
+  microPanel(340,230,'銅板（＋極）・還元','#ffd8c0','Cu²⁺ + 2e⁻ → Cu');
+  const cR=548;                                 // 金属面x
+  ctx.save(); ctx.fillStyle='rgba(217,138,90,0.5)'; ctx.fillRect(cR,90,570-cR,260); ctx.restore();
+  for(let r=0;r<8;r++)for(let c=0;c<2;c++){
+    const ax=552+c*9, ay=100+r*32+(c?6:0);
+    metalAtom(ax,ay,COL.cu,'Cu');
+  }
+  if(state.on){
+    // 近づく Cu²⁺
+    for(let i=0;i<3;i++){
+      const p=(ph + i/3)%1;
+      const x=360 + p*(cR-372), y=150+i*60;
+      ionDot(x,y,COL.cuIon,'＋', p<0.7?'Cu²⁺':'');
+      if(p>0.85) metalAtom(cR-6, y, COL.cu, ''); // 付着
+    }
+    // 導線から来る電子（上→金属面）
+    for(let i=0;i<3;i++){ const p=(ph + i/3)%1; eDot(cR+8, 64 + p*250); }
+    arrow(cR+8,50, cR+8,72, COL.e); txt('導線から', cR+8, 40, '9px', COL.e);
+  }
+  txt('Cu²⁺ + 2e⁻ → Cu', 340+230/2, 410, '12px', '#ffd8c0');
+
+  if(!state.on) txt('スイッチ「切」：反応は進まない', VW/2, 432, '12px', 'rgba(180,190,210,.8)');
+}
+function metalAtom(x,y,col,lbl){
+  ctx.save(); ctx.fillStyle=col; ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=.8;
+  ctx.beginPath(); ctx.arc(x,y,6,0,TAU); ctx.fill(); ctx.stroke();
+  if(lbl){ ctx.fillStyle='rgba(10,12,20,.7)'; ctx.font="600 6px 'JetBrains Mono'"; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(lbl,x,y); }
+  ctx.restore();
+}
+
+/* ============================================================
+   メイン描画
+   ============================================================ */
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,cv.width/DPR,cv.height/DPR);
+  ctx.save(); ctx.translate(ox,oy); ctx.scale(scale,scale);
+  ctx.beginPath(); ctx.rect(0,0,VW,VH); ctx.clip();
+  if(state.view==='macro') drawMacro(); else drawMicro();
+  ctx.restore();
+}
+
+/* ============================================================
+   パネル更新
+   ============================================================ */
+const $=id=>document.getElementById(id);
+function drawMiniIcon(){
+  const mx=$('mini').getContext('2d'); mx.clearRect(0,0,74,52);
+  mx.fillStyle=COL.zn; mx.fillRect(14,16,4,26);
+  mx.fillStyle=COL.cu; mx.fillRect(56,16,4,26);
+  mx.strokeStyle=COL.wire; mx.lineWidth=1.5;
+  mx.beginPath(); mx.moveTo(16,16); mx.lineTo(16,8); mx.lineTo(58,8); mx.lineTo(58,16); mx.stroke();
+  mx.fillStyle=state.on?'#ffe066':'rgba(150,160,180,.5)';
+  mx.beginPath(); mx.arc(37,8,3.5,0,TAU); mx.fill();
+  mx.fillStyle='#9aa3b8'; mx.font="700 8px 'JetBrains Mono'"; mx.textAlign='center';
+  mx.fillText('−',16,50); mx.fillText('＋',58,50);
+}
+function updatePanel(){
+  drawMiniIcon();
+  $('mV').innerHTML = (state.on?'約 1.1':'0')+' <small>V</small>';
+  $('mE').textContent = state.on?'亜鉛 → 銅':'流れない';
+  $('mI').textContent = state.on?'銅 → 亜鉛':'流れない';
+}
+
+/* ============================================================
+   入力（スイッチをタップ）
+   ============================================================ */
+function toV(ev){ const r=cv.getBoundingClientRect();
+  return { x:((ev.clientX-r.left)-ox)/scale, y:((ev.clientY-r.top)-oy)/scale }; }
+cv.addEventListener('pointerdown',ev=>{
+  if(state.view!=='macro') return;
+  const v=toV(ev);
+  if(Math.abs(v.x-SW.x)<26 && Math.abs(v.y-SW.y)<26){ setOn(!state.on); ev.preventDefault(); }
+});
+
+/* ============================================================
+   コントロール
+   ============================================================ */
+const swSeg=$('swSeg'), viewSeg=$('viewSeg');
+function setOn(b){ state.on=b; swSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',(x.dataset.on==='1')===b)); updatePanel(); }
+swSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setOn(b.dataset.on==='1')));
+viewSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  state.view=b.dataset.view; viewSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.view===state.view)); }));
+function bindTog(id,key){ const t=$(id); t.classList.toggle('on',state[key]);
+  t.addEventListener('click',()=>{ state[key]=!state[key]; t.classList.toggle('on',state[key]); }); }
+bindTog('eTog','showE'); bindTog('ionTog','showIon');
+
+document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); $('tab-'+b.dataset.tab).classList.add('on'); }));
+$('ptog').addEventListener('click',()=>$('aside').classList.add('open'));
+$('pclose').addEventListener('click',()=>$('aside').classList.remove('open'));
+
+/* ============================================================
+   クイズ
+   ============================================================ */
+const QBANK=[
+  {q:'ダニエル電池で−極（負極）になるのはどちら？',o:['亜鉛板','銅板','どちらでもない'],a:0,e:'イオンになりやすい亜鉛が電子を残してとけ出すので、亜鉛が−極。'},
+  {q:'亜鉛板で起きている変化はどれ？',o:['Zn²⁺ + 2e⁻ → Zn','Zn → Zn²⁺ + 2e⁻','変化しない'],a:1,e:'亜鉛は酸化され、Zn→Zn²⁺+2e⁻ となってとけ出す。'},
+  {q:'電子は導線をどちら向きに流れる？',o:['亜鉛（−）から銅（＋）へ','銅（＋）から亜鉛（−）へ','流れない'],a:0,e:'電子は−極の亜鉛から＋極の銅へ。電流の向きはその逆。'},
+  {q:'電流の向きはどちら？',o:['亜鉛から銅へ','銅（＋）から亜鉛（−）へ','向きはない'],a:1,e:'電流の向きは電子の流れと逆。＋極の銅から−極の亜鉛へ。'},
+  {q:'銅板の表面で起きることは？',o:['銅がとけてイオンになる','Cu²⁺が電子を受けとって銅が付着する','水素が発生する'],a:1,e:'＋極では Cu²⁺+2e⁻→Cu の還元が起き、銅が付着する。'},
+  {q:'反応が進むと CuSO₄水溶液の青色はどうなる？',o:['濃くなる','うすくなる','変わらない'],a:1,e:'青色のもとである Cu²⁺ が減っていくので、青色はうすくなる。'},
+  {q:'イオン化傾向（イオンへのなりやすさ）の大小は？',o:['Zn > Cu','Cu > Zn','同じ'],a:0,e:'Zn>Cu。なりやすい亜鉛がとけ出して−極になる。'},
+  {q:'素焼き板（しきり）の役割は？',o:['電子を通す','2つの水溶液が混ざるのを防ぎつつイオンを通す','光を通す'],a:1,e:'水溶液が一気に混ざるのを防ぎながら、イオンは通して電気的なバランスを保つ。'},
+];
+let quiz={list:[],i:0,score:0,answered:false};
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startQuiz(){ quiz={list:shuffle(QBANK).slice(0,6),i:0,score:0,answered:false}; renderQ(); }
+function renderQ(){
+  const area=$('quizArea');
+  if(quiz.i>=quiz.list.length){
+    const m=quiz.score===6?'パーフェクト！✨':quiz.score>=4?'いい感じ！':'もう一度チャレンジ！';
+    area.innerHTML='<div class="quiz-result"><div class="score">'+quiz.score+'/6</div><div class="lab">'+m+'</div><button class="btn primary" id="qRetry">もう一度</button></div>';
+    $('qRetry').addEventListener('click',startQuiz); return;
+  }
+  const it=quiz.list[quiz.i]; quiz.answered=false;
+  area.innerHTML='<div class="quiz-prog">Q '+(quiz.i+1)+' / 6 ・ SCORE '+quiz.score+'</div><div class="quiz-q">'+it.q+'</div><div id="qOpts"></div><div class="quiz-fb" id="qFb"></div><button class="btn primary" id="qNext" style="display:none">'+(quiz.i===5?'結果を見る':'次の問題 →')+'</button>';
+  const opts=$('qOpts');
+  it.o.forEach((o,idx)=>{ const b=document.createElement('button'); b.className='quiz-opt'; b.textContent=o;
+    b.addEventListener('click',()=>answer(idx,b)); opts.appendChild(b); });
+}
+function answer(idx,btn){
+  if(quiz.answered)return; quiz.answered=true;
+  const it=quiz.list[quiz.i];
+  [...$('qOpts').children].forEach((b,i)=>{ b.disabled=true; if(i===it.a)b.classList.add('ok'); });
+  const fb=$('qFb');
+  if(idx===it.a){ quiz.score++; fb.className='quiz-fb show ok'; fb.innerHTML='<span class="lab">正解</span>'+it.e; }
+  else{ btn.classList.add('ng'); fb.className='quiz-fb show ng'; fb.innerHTML='<span class="lab">おしい</span>'+it.e; }
+  const nx=$('qNext'); nx.style.display='block';
+  nx.addEventListener('click',()=>{ quiz.i++; renderQ(); },{once:true});
+}
+startQuiz();
+
+/* ============================================================
+   リサイズ＆ループ
+   ============================================================ */
+function resize(){
+  const st=cv.parentElement.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  cv.width=st.width*DPR; cv.height=st.height*DPR;
+  cv.style.width=st.width+'px'; cv.style.height=st.height+'px';
+  scale=Math.min(st.width/VW, st.height/VH);
+  ox=(st.width-VW*scale)/2; oy=(st.height-VH*scale)/2;
+}
+window.addEventListener('resize',resize);
+
+let last=performance.now();
+function loop(t){
+  const dt=Math.min((t-last)/1000,0.05); last=t; tNow=t/1000;
+  stepIons(dt);
+  if(state.on) state.blue=Math.max(0.25, state.blue - dt*0.01);  // CuSO4の青がゆっくりうすく
+  draw(); requestAnimationFrame(loop);
+}
+resize(); updatePanel();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

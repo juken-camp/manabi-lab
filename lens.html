@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>凸レンズと光｜まなびラボ</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050b;
+  --panel:rgba(14,18,32,0.85);
+  --panel-line:rgba(120,150,210,0.18);
+  --amber:#f5a623;
+  --amber-soft:#ffce7a;
+  --cyan:#5fd3e0;
+  --cyan-soft:#9ff0fb;
+  --text:#e8ecf6;
+  --dim:#8893ad;
+  --good:#5fe09a;
+  --bad:#ff7a7a;
+  --jp:'Zen Kaku Gothic New',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  background:
+    radial-gradient(1100px 700px at 22% -10%, rgba(95,211,224,0.10), transparent 60%),
+    radial-gradient(900px 800px at 110% 120%, rgba(245,166,35,0.07), transparent 55%),
+    var(--bg);
+  color:var(--text);font-family:var(--jp);
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
+}
+header{display:flex;align-items:center;gap:14px;padding:11px 18px;
+  border-bottom:1px solid var(--panel-line);background:rgba(6,8,16,0.6);backdrop-filter:blur(8px);flex:none}
+header .accent{width:4px;height:34px;border-radius:3px;
+  background:linear-gradient(var(--cyan),var(--cyan-soft));box-shadow:0 0 14px rgba(95,211,224,.5)}
+header h1{font-size:18px;font-weight:700;letter-spacing:.04em}
+header .en{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.20em;margin-top:1px}
+header .sys{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);
+  display:flex;align-items:center;gap:7px;letter-spacing:.08em}
+header .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+header .unit{color:var(--cyan-soft)}
+
+main{flex:1;display:grid;grid-template-columns:1fr 318px;min-height:0}
+.stage{position:relative;overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;top:12px;left:14px;font-size:11px;line-height:1.7;color:var(--dim);
+  font-family:var(--mono);letter-spacing:.02em;pointer-events:none;
+  background:rgba(6,8,16,.4);padding:6px 9px;border-radius:8px;border:1px solid var(--panel-line)}
+.hint b{color:var(--cyan-soft);font-weight:600}
+
+.controls{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:13px;flex-wrap:wrap;justify-content:center;
+  background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
+  padding:11px 16px;backdrop-filter:blur(10px);max-width:95%;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.seg{display:flex;background:rgba(0,0,0,.3);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+  font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.18s}
+.seg button.on{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;font-weight:700;box-shadow:0 0 12px rgba(95,211,224,.35)}
+.sl{display:flex;align-items:center;gap:9px}
+.sl label{font-size:12px;color:var(--dim)}
+.sl input[type=range]{-webkit-appearance:none;appearance:none;width:128px;height:4px;border-radius:3px;
+  background:linear-gradient(90deg,var(--cyan) 0%,var(--cyan) var(--p,0%),rgba(255,255,255,.14) var(--p,0%));outline:none;cursor:pointer}
+.sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+.sl input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;
+  background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+.sl b{font-family:var(--mono);font-size:13px;color:var(--cyan-soft);min-width:58px;text-align:right}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--dim)}
+.sw{width:38px;height:21px;border-radius:12px;background:rgba(255,255,255,.14);position:relative;transition:.2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#cfd6e6;transition:.2s}
+.toggle.on .sw{background:var(--amber)}
+.toggle.on .sw::after{left:19px;background:#1a1206}
+.toggle.on{color:var(--text)}
+
+aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);display:flex;flex-direction:column;min-height:0}
+.tabbar{display:flex;border-bottom:1px solid var(--panel-line);flex:none}
+.tabbar button{flex:1;border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+  font-size:13px;font-weight:500;padding:13px 0;cursor:pointer;position:relative;transition:.18s}
+.tabbar button.on{color:var(--text)}
+.tabbar button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:2px;border-radius:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.panelbody{flex:1;overflow-y:auto;padding:16px}
+.tabpane{display:none;animation:fade .25s}
+.tabpane.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.phasehead{display:flex;align-items:center;gap:13px;margin-bottom:6px}
+#miniMoon{flex:none;border-radius:8px;background:rgba(0,0,0,.25)}
+.phasehead .pname{font-size:18px;font-weight:700;line-height:1.25}
+.phasehead .pyomi{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em;margin-top:3px}
+
+.meter{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:11px 13px;margin-top:9px;border:1px solid var(--panel-line);border-radius:11px;background:rgba(255,255,255,.02)}
+.meter .k{font-size:12px;color:var(--dim);flex:none}
+.meter .v{font-family:var(--mono);font-size:14px;color:var(--text);text-align:right}
+.meter .v small{color:var(--dim);font-size:11px}
+.meter .v.cyan{color:var(--cyan-soft)}
+.meter .v.jp{font-family:var(--jp);font-size:12.5px}
+
+.pt{display:flex;gap:9px;margin-bottom:13px;font-size:13.5px;line-height:1.72}
+.pt .b{color:var(--cyan);flex:none;margin-top:1px}
+.pt b{color:var(--cyan-soft);font-weight:700}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin-bottom:8px}
+.legend i{width:20px;height:0;border-top:3px solid;border-radius:2px;flex:none}
+.note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:6px;
+  padding:11px 13px;border-left:2px solid var(--amber);background:rgba(245,166,35,.05);border-radius:0 8px 8px 0}
+
+.quiz-q{font-size:14.5px;font-weight:500;line-height:1.7;margin-bottom:14px}
+.quiz-prog{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:10px}
+.quiz-opt{display:block;width:100%;text-align:left;border:1px solid var(--panel-line);background:rgba(255,255,255,.02);
+  color:var(--text);font-family:var(--jp);font-size:13.5px;padding:12px 14px;border-radius:11px;margin-bottom:9px;cursor:pointer;transition:.15s}
+.quiz-opt:hover{border-color:rgba(120,150,210,.45);background:rgba(255,255,255,.05)}
+.quiz-opt.ok{border-color:var(--good);background:rgba(95,224,154,.12);color:var(--good)}
+.quiz-opt.ng{border-color:var(--bad);background:rgba(255,122,122,.12);color:var(--bad)}
+.quiz-opt:disabled{cursor:default}
+.quiz-fb{font-size:13px;line-height:1.7;margin-top:10px;padding:12px 14px;border-radius:11px;display:none}
+.quiz-fb.show{display:block}
+.quiz-fb.ok{background:rgba(95,224,154,.1);border:1px solid rgba(95,224,154,.3)}
+.quiz-fb.ng{background:rgba(255,122,122,.1);border:1px solid rgba(255,122,122,.3)}
+.quiz-fb .lab{font-weight:700;margin-right:6px}
+.quiz-fb.ok .lab{color:var(--good)}.quiz-fb.ng .lab{color:var(--bad)}
+.btn{border:1px solid var(--panel-line);background:rgba(255,255,255,.04);color:var(--text);font-family:var(--jp);
+  font-size:13px;font-weight:600;padding:11px 18px;border-radius:11px;cursor:pointer;margin-top:6px;transition:.15s}
+.btn:hover{background:rgba(255,255,255,.09)}
+.btn.primary{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;border:0;box-shadow:0 0 14px rgba(95,211,224,.3)}
+.quiz-result{text-align:center;padding:18px 0}
+.quiz-result .score{font-family:var(--mono);font-size:42px;font-weight:600;color:var(--cyan-soft)}
+.quiz-result .lab{font-size:13px;color:var(--dim);margin:6px 0 18px}
+
+.panel-toggle{display:none}
+@media(max-width:820px){
+  main{grid-template-columns:1fr}
+  aside{position:fixed;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);background:rgba(8,11,20,.97);backdrop-filter:blur(12px)}
+  aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+  .panel-toggle{display:flex;position:absolute;top:12px;right:14px;z-index:20;align-items:center;gap:6px;
+    border:1px solid var(--panel-line);background:var(--panel);color:var(--text);font-family:var(--jp);
+    font-size:12px;font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+  .panel-close{display:block;position:absolute;top:10px;right:12px;z-index:5;border:0;background:rgba(255,255,255,.06);
+    color:var(--text);width:32px;height:32px;border-radius:9px;font-size:17px;cursor:pointer}
+  .hint{font-size:10px;top:auto;bottom:96px}
+  .controls{bottom:12px;gap:10px;padding:10px 12px}
+  .sl input[type=range]{width:106px}
+}
+.panel-close{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="accent"></div>
+  <div>
+    <h1>凸レンズと光</h1>
+    <div class="en">CONVEX LENS · OPTICS</div>
+  </div>
+  <div class="sys"><span class="dot"></span>SYS ● ONLINE&nbsp;｜&nbsp;<span class="unit">物理</span></div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint">1本指ドラッグ＝<b>物体を動かす</b><br>焦点の内側に入れると<b>像が変わる</b></div>
+    <button class="panel-toggle" id="ptog">☰ データ</button>
+
+    <div class="controls">
+      <div class="seg" id="animSeg">
+        <button data-anim="0" class="on">⏸ 停止</button>
+        <button data-anim="1">▶ 自動</button>
+      </div>
+      <div class="sl">
+        <label>物体の位置</label>
+        <input type="range" id="aDist" min="2.5" max="28" step="0.1" value="18">
+        <b id="aVal">18.0cm</b>
+      </div>
+      <div class="sl">
+        <label>焦点距離</label>
+        <input type="range" id="fLen" min="5" max="13" step="0.1" value="8">
+        <b id="fVal">8.0cm</b>
+      </div>
+      <div class="toggle" id="screenTog"><span>スクリーン</span><span class="sw"></span></div>
+      <div class="toggle on" id="focusTog"><span>焦点F</span><span class="sw"></span></div>
+    </div>
+  </div>
+
+  <aside id="aside">
+    <button class="panel-close" id="pclose">×</button>
+    <div class="tabbar">
+      <button class="on" data-tab="data">像データ</button>
+      <button data-tab="explain">解説</button>
+      <button data-tab="quiz">クイズ</button>
+    </div>
+    <div class="panelbody">
+
+      <div class="tabpane on" id="tab-data">
+        <div class="phasehead">
+          <canvas id="miniMoon" width="74" height="52"></canvas>
+          <div>
+            <div class="pname" id="pName">実像</div>
+            <div class="pyomi" id="pYomi">REAL IMAGE</div>
+          </div>
+        </div>
+        <div class="meter"><span class="k">像の種類</span><span class="v jp cyan" id="mType">実像</span></div>
+        <div class="meter"><span class="k">像の向き</span><span class="v jp" id="mOri">倒立</span></div>
+        <div class="meter"><span class="k">像の位置</span><span class="v jp" id="mPos">―</span></div>
+        <div class="meter"><span class="k">倍率（像の大きさ）</span><span class="v" id="mMag">×1.0</span></div>
+        <div class="meter"><span class="k">スクリーンに映る？</span><span class="v jp" id="mScreen">映る</span></div>
+        <div class="note" id="mNote">物体・レンズ・像の関係は 1/a + 1/b = 1/f。物体を焦点（F）の内側に入れると、実像から正立の虚像（虫めがね）に変わる。</div>
+      </div>
+
+      <div class="tabpane" id="tab-explain">
+        <div class="legend"><i style="border-color:#5fd3e0"></i>軸に平行な光 → 反対側の焦点を通る</div>
+        <div class="legend"><i style="border-color:#bfeff7"></i>中心を通る光 → そのまま直進</div>
+        <div class="legend"><i style="border-color:#49b3c4"></i>手前の焦点を通る光 → 軸に平行に進む</div>
+        <div class="pt"><span class="b">●</span><span>この<b>3本の光線</b>が交わる点に像ができる。実際の光が集まれば<b>実像</b>、集まらず延長線が交われば<b>虚像</b>。</span></div>
+        <div class="pt"><span class="b">●</span><span><b>焦点距離の2倍(2F)</b>に物体を置くと、反対側の2Fに<b>同じ大きさ</b>の倒立実像。2Fより遠いと小さく、2FとFの間だと大きく（いずれも倒立実像）。</span></div>
+        <div class="pt"><span class="b">●</span><span>物体を<b>焦点F</b>に置くと光が平行になり、<b>像はできない</b>。</span></div>
+        <div class="pt"><span class="b">●</span><span>物体を<b>Fの内側</b>に入れると、反対側ではなく物体と同じ側に<b>正立で拡大した虚像</b>が見える。これが<b>虫めがね</b>のしくみ。</span></div>
+        <div class="pt"><span class="b">●</span><span>実像はスクリーンに映せるが、<b>虚像は映らない</b>（光が実際には集まっていないから）。</span></div>
+        <div class="note">確かめ方：自動をONにして物体を行き来させ、Fを境に像が<b>倒立実像⇄正立虚像</b>と切り替わる瞬間を見よう。</div>
+      </div>
+
+      <div class="tabpane" id="tab-quiz"><div id="quizArea"></div></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   凸レンズと光 シミュレーター / まなびラボ
+   ============================================================ */
+const TAU=Math.PI*2;
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const VW=640, VH=460;
+let scale=1, ox=0, oy=0, DPR=1, tNow=0;
+
+const PPC=9;                 // px / cm
+const lensX=302, axisY=232;  // レンズ位置・光軸
+const lensH=120;             // レンズ半径(縦)＝口径
+const RAY=['#5fd3e0','#bfeff7','#49b3c4'];
+
+const state={ a:18, f:8, screen:false, focusMk:true, anim:false, sweepDir:1 };
+
+/* ---------- 物理計算 ---------- */
+function compute(){
+  const a=state.a, f=state.f, h=4;          // 物体の高さ 4cm 固定
+  const objX=lensX - a*PPC, objTip=axisY - h*PPC;
+  const noImg=Math.abs(a-f)<0.25;
+  const b = noImg ? Infinity : (a*f)/(a-f);
+  const m = b/a;
+  const real = !noImg && b>0;
+  const virtual = !noImg && b<0;
+  const imageX = lensX + b*PPC;
+  const imgH = Math.abs(m)*h*PPC;
+  const imageTip = real ? axisY+imgH : axisY-imgH;
+  return {a,f,h,objX,objTip,noImg,b,m,real,virtual,imageX,imageTip,imgH};
+}
+
+/* ---------- 描画ヘルパ ---------- */
+function lineTo(x1,y1,x2,y2,col,w,dash){
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=w||1.6;
+  if(dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore();
+}
+function ext(x,y,dx,dy,len){ const n=Math.hypot(dx,dy)||1; return {x:x+dx/n*len, y:y+dy/n*len}; }
+/* 発光ビーム：太いグロー＋明るい芯 */
+function beamSeg(x1,y1,x2,y2,col,opt){
+  opt=opt||{};
+  ctx.save(); ctx.lineCap='round';
+  if(opt.faint){                       // 虚像の延長線（仮想の光路）
+    ctx.strokeStyle=col; ctx.globalAlpha=0.5; ctx.lineWidth=1.4;
+    if(opt.dash) ctx.setLineDash(opt.dash);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  }else{
+    ctx.strokeStyle=col; ctx.globalAlpha=0.18; ctx.lineWidth=9; ctx.shadowColor=col; ctx.shadowBlur=16;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.shadowBlur=0; ctx.globalAlpha=0.95; ctx.lineWidth=2.4;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  }
+  ctx.restore();
+}
+/* 光が線になって飛ぶ：芯の上を流れる発光粒 */
+function flowDots(x1,y1,x2,y2,col){
+  const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy); if(len<2) return;
+  const ux=dx/len, uy=dy/len, gap=52;
+  ctx.save(); ctx.shadowColor=col; ctx.shadowBlur=8; ctx.fillStyle='#eafcff';
+  for(let d=(tNow*130)%gap; d<len; d+=gap){
+    ctx.globalAlpha=0.9; ctx.beginPath(); ctx.arc(x1+ux*d, y1+uy*d, 1.9, 0, TAU); ctx.fill();
+  }
+  ctx.restore();
+}
+function glowPoint(x,y,col,r,a){
+  ctx.save(); ctx.globalAlpha=a; ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=16;
+  ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill(); ctx.restore();
+}
+/* 発光する光源（物体） */
+function drawSource(x,base,tip){
+  const pulse=0.85+0.15*Math.sin(tNow*3);
+  const g=ctx.createRadialGradient(x,tip,0,x,tip,30);
+  g.addColorStop(0,'rgba(255,226,172,'+(0.95*pulse)+')');
+  g.addColorStop(.4,'rgba(255,180,84,'+(0.32*pulse)+')');
+  g.addColorStop(1,'rgba(255,180,84,0)');
+  ctx.save(); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,tip,30,0,TAU); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.lineCap='round'; ctx.shadowColor='#ffb454'; ctx.shadowBlur=14;
+  ctx.strokeStyle='#ffe0a8'; ctx.lineWidth=3.6;
+  ctx.beginPath(); ctx.moveTo(x,base); ctx.lineTo(x,tip); ctx.stroke();
+  ctx.fillStyle='#ffe0a8'; ctx.beginPath(); ctx.moveTo(x,tip); ctx.lineTo(x-7,tip+9); ctx.lineTo(x+7,tip+9); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.save(); ctx.fillStyle='#fff7e6'; ctx.shadowColor='#ffce7a'; ctx.shadowBlur=12;
+  ctx.beginPath(); ctx.arc(x,tip,3,0,TAU); ctx.fill(); ctx.restore();
+}
+/* 像の矢印 */
+function drawImageArrow(x,base,tip,virtual){
+  const up = tip<base ? -1 : 1, hs=7;
+  ctx.save(); ctx.lineCap='round';
+  if(virtual){ ctx.globalAlpha=0.85; ctx.strokeStyle='#ffce7a'; ctx.fillStyle='#ffce7a';
+    ctx.lineWidth=3; ctx.shadowColor='#ffce7a'; ctx.shadowBlur=8; ctx.setLineDash([5,4]); }
+  else{ ctx.strokeStyle='#ffe0a8'; ctx.fillStyle='#ffe0a8'; ctx.lineWidth=3.4;
+    ctx.shadowColor='#ffd98a'; ctx.shadowBlur=14; }
+  ctx.beginPath(); ctx.moveTo(x,base); ctx.lineTo(x,tip); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x,tip); ctx.lineTo(x-hs,tip-up*hs); ctx.lineTo(x+hs,tip-up*hs); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function tick(x,txt,col){
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(x,axisY-6); ctx.lineTo(x,axisY+6); ctx.stroke();
+  ctx.fillStyle=col; ctx.font="600 11px 'JetBrains Mono',monospace"; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText(txt,x,axisY+9); ctx.restore();
+}
+function txt(s,x,y,size,col,align){
+  ctx.save(); ctx.font="600 "+(size||'12px')+" 'Zen Kaku Gothic New',sans-serif";
+  ctx.textAlign=align||'center'; ctx.textBaseline='middle'; ctx.fillStyle=col||'#e8ecf6'; ctx.fillText(s,x,y); ctx.restore();
+}
+function drawLens(){
+  const top=axisY-lensH, bot=axisY+lensH, bulge=20;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(lensX,top);
+  ctx.quadraticCurveTo(lensX+bulge,axisY,lensX,bot);
+  ctx.quadraticCurveTo(lensX-bulge,axisY,lensX,top);
+  ctx.closePath();
+  const g=ctx.createLinearGradient(lensX-bulge,0,lensX+bulge,0);
+  g.addColorStop(0,'rgba(95,211,224,0.10)'); g.addColorStop(.5,'rgba(159,240,251,0.22)'); g.addColorStop(1,'rgba(95,211,224,0.10)');
+  ctx.fillStyle=g; ctx.fill();
+  ctx.shadowColor='rgba(95,211,224,0.7)'; ctx.shadowBlur=12;
+  ctx.strokeStyle='rgba(159,240,251,0.7)'; ctx.lineWidth=1.8; ctx.stroke();
+  ctx.shadowBlur=0;
+  // 凸レンズの記号（上下に外向き矢印）
+  ctx.strokeStyle='rgba(159,240,251,0.6)'; ctx.lineWidth=1.6; ctx.fillStyle='rgba(159,240,251,0.6)';
+  for(const yy of [top, bot]){
+    const d = yy===top ? -1 : 1;
+    ctx.beginPath(); ctx.moveTo(lensX-5,yy-d*7); ctx.lineTo(lensX,yy); ctx.lineTo(lensX+5,yy-d*7); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ============================================================
+   メイン描画
+   ============================================================ */
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,cv.width/DPR,cv.height/DPR);
+  ctx.save(); ctx.translate(ox,oy); ctx.scale(scale,scale);
+  ctx.beginPath(); ctx.rect(0,0,VW,VH); ctx.clip();   // letterbox外に出さない
+
+  const S=compute();
+  const fpx=S.f*PPC;
+
+  /* 光軸 */
+  lineTo(20,axisY, VW-20,axisY, 'rgba(120,150,210,0.3)', 1, [4,6]);
+
+  /* 焦点 F・2F */
+  if(state.focusMk){
+    tick(lensX-fpx,'F','rgba(95,211,224,.85)');
+    tick(lensX+fpx,'F','rgba(95,211,224,.85)');
+    tick(lensX-2*fpx,'2F','rgba(95,211,224,.5)');
+    tick(lensX+2*fpx,'2F','rgba(95,211,224,.5)');
+  }
+
+  drawLens();
+
+  /* ---- 光線（3本）：レンズに当たった光だけ屈折 ---- */
+  const P={x:S.objX,y:S.objTip};
+  const A1={x:lensX,y:S.objTip};                 // 軸に平行
+  const C ={x:lensX,y:axisY};                     // 中心
+  const Fl={x:lensX-fpx,y:axisY}, Fr={x:lensX+fpx,y:axisY};
+  const slope3=(axisY-S.objTip)/(Fl.x-P.x);
+  const A3={x:lensX,y:S.objTip+slope3*(lensX-P.x)}; // 手前の焦点を通る
+  const yTop=axisY-lensH, yBot=axisY+lensH;
+  const hitFocal = A3.y>=yTop && A3.y<=yBot;       // 第3の光線が口径内に当たるか
+
+  const d1={x:Fr.x-A1.x,y:Fr.y-A1.y};
+  const d2={x:C.x-P.x, y:C.y-P.y};
+  const L=820;
+  const e1=ext(A1.x,A1.y,d1.x,d1.y,L);
+  const e2=ext(C.x, C.y, d2.x,d2.y,L);
+  const e3=ext(A3.x,A3.y,1,0,L);
+
+  // 入射ビーム（光源→レンズ面で止まる：空中で曲げない）
+  beamSeg(P.x,P.y,A1.x,A1.y,RAY[0]); flowDots(P.x,P.y,A1.x,A1.y,RAY[0]);
+  beamSeg(P.x,P.y,C.x, C.y, RAY[1]); flowDots(P.x,P.y,C.x,C.y,RAY[1]);
+  if(hitFocal){ beamSeg(P.x,P.y,A3.x,A3.y,RAY[2]); flowDots(P.x,P.y,A3.x,A3.y,RAY[2]); }
+
+  // 屈折ビーム（レンズ→外へ）
+  beamSeg(A1.x,A1.y,e1.x,e1.y,RAY[0]); flowDots(A1.x,A1.y,e1.x,e1.y,RAY[0]);
+  beamSeg(C.x, C.y, e2.x,e2.y,RAY[1]); flowDots(C.x,C.y,e2.x,e2.y,RAY[1]);
+  if(hitFocal){ beamSeg(A3.x,A3.y,e3.x,e3.y,RAY[2]); flowDots(A3.x,A3.y,e3.x,e3.y,RAY[2]); }
+
+  // 虚像のとき：後方への延長（仮想の光路＝破線・淡い）
+  if(S.virtual){
+    const b1=ext(A1.x,A1.y,-d1.x,-d1.y,460), b2=ext(C.x,C.y,-d2.x,-d2.y,460);
+    beamSeg(A1.x,A1.y,b1.x,b1.y,RAY[0],{faint:true,dash:[6,6]});
+    beamSeg(C.x, C.y, b2.x,b2.y,RAY[1],{faint:true,dash:[6,6]});
+    if(hitFocal){ const b3=ext(A3.x,A3.y,-1,0,460); beamSeg(A3.x,A3.y,b3.x,b3.y,RAY[2],{faint:true,dash:[6,6]}); }
+  }
+
+  /* ---- スクリーン（実像のみ） ---- */
+  if(state.screen){
+    if(S.real && S.imageX>lensX+8 && S.imageX<VW-6){
+      lineTo(S.imageX,axisY-lensH-6,S.imageX,axisY+lensH+6,'rgba(220,228,245,.5)',6);
+      txt('スクリーン',S.imageX,axisY+lensH+22,'10px','rgba(200,210,235,.7)');
+    }else if(S.virtual){
+      txt('虚像はスクリーンに映らない',lensX+150,axisY+lensH+18,'12px','rgba(255,206,122,.85)');
+    }
+  }
+
+  /* ---- 像 ---- */
+  if(S.noImg){
+    txt('光が平行 → 像はできない',lensX+150,axisY-lensH-6,'13px','#ffce7a');
+  }else if(S.imageX>10 && S.imageX<VW-10 && S.imgH<300){
+    glowPoint(S.imageX,S.imageTip, S.virtual?'rgba(255,206,122,.7)':'#fff2d4', S.virtual?5:7, S.virtual?0.55:1);
+    drawImageArrow(S.imageX,axisY,S.imageTip,S.virtual);
+    txt(S.virtual?'虚像（正立）':'実像（倒立）', S.imageX, S.imageTip + (S.imageTip>axisY? 16:-16),'11px',S.virtual?'#ffce7a':'#ffd98a');
+  }else{
+    txt('像は画面の外（とても'+(S.imgH>=300?'大きい':'遠い')+'）',lensX+150,axisY-lensH-6,'12px','#ffce7a');
+  }
+
+  /* ---- 光源（物体）：発光させて上に重ねる ---- */
+  drawSource(S.objX, axisY, S.objTip);
+  txt('光源',S.objX,axisY+18,'11px','#ffce7a');
+
+  ctx.restore();
+}
+
+/* ============================================================
+   パネル更新（textContentのみ）
+   ============================================================ */
+const $=id=>document.getElementById(id);
+function fmtPos(S){
+  if(S.noImg) return '∞（できない）';
+  if(S.real)  return 'レンズの右 '+ (S.b).toFixed(1) +'cm';
+  return 'レンズの左 '+ Math.abs(S.b).toFixed(1) +'cm（物体側）';
+}
+function sizeWord(m){ const am=Math.abs(m); return am>1.05?'拡大':am<0.95?'縮小':'等倍'; }
+function updatePanel(){
+  const S=compute();
+  $('aVal').textContent=state.a.toFixed(1)+'cm';
+  $('fVal').textContent=state.f.toFixed(1)+'cm';
+  $('aDist').style.setProperty('--p',((state.a-2.5)/(28-2.5)*100)+'%');
+  $('fLen').style.setProperty('--p',((state.f-5)/(13-5)*100)+'%');
+
+  // ミニ図
+  const mc=$('miniMoon'), mx=mc.getContext('2d'); mx.clearRect(0,0,74,52);
+  mx.strokeStyle='rgba(120,150,210,.35)'; mx.lineWidth=1; mx.beginPath(); mx.moveTo(4,26); mx.lineTo(70,26); mx.stroke();
+  mx.strokeStyle='rgba(159,240,251,.7)'; mx.lineWidth=2; mx.beginPath(); mx.moveTo(37,8); mx.lineTo(37,44); mx.stroke();
+  const drawMini=(x,up,col,a)=>{mx.save();mx.globalAlpha=a;mx.strokeStyle=col;mx.fillStyle=col;mx.lineWidth=2;
+    mx.beginPath();mx.moveTo(x,26);mx.lineTo(x,26-up*13);mx.stroke();
+    mx.beginPath();mx.moveTo(x,26-up*13);mx.lineTo(x-4,26-up*8);mx.lineTo(x+4,26-up*8);mx.closePath();mx.fill();mx.restore();};
+  drawMini(16,1,'#ffb454',1);
+  if(S.real) drawMini(58,-1,'#ffce7a',.9);
+  else if(S.virtual) drawMini(10,1,'#ffce7a',.7);
+
+  let nm,en;
+  if(S.noImg){nm='像なし';en='NO IMAGE (a = f)';}
+  else if(S.real){nm='実像';en='REAL · INVERTED';}
+  else {nm='虚像';en='VIRTUAL · UPRIGHT';}
+  $('pName').textContent=nm; $('pYomi').textContent=en;
+  $('mType').textContent = S.noImg?'できない':(S.real?'実像':'虚像');
+  $('mOri').textContent  = S.noImg?'―':(S.real?'倒立（上下逆）':'正立');
+  $('mPos').textContent  = fmtPos(S);
+  $('mMag').textContent  = S.noImg?'―':('×'+Math.abs(S.m).toFixed(2)+'（'+sizeWord(S.m)+'）');
+  $('mScreen').textContent = S.real?'映る':(S.virtual?'映らない':'―');
+}
+
+/* ============================================================
+   入力（ドラッグ／タップで物体移動）
+   ============================================================ */
+function toV(ev){ const r=cv.getBoundingClientRect();
+  return { x:((ev.clientX-r.left)-ox)/scale, y:((ev.clientY-r.top)-oy)/scale }; }
+let dragging=false;
+function grab(ev){
+  const v=toV(ev);
+  if(v.x < lensX-14 && v.y>10 && v.y<VH-10){
+    dragging=true; state.anim=false; syncAnim();
+    setA(v.x); ev.preventDefault();
+  }
+}
+function setA(vx){
+  let a=(lensX-vx)/PPC; a=Math.max(2.5,Math.min(28,a));
+  state.a=a; syncSliders(); updatePanel();
+}
+cv.addEventListener('pointerdown',grab);
+cv.addEventListener('pointermove',ev=>{ if(dragging){ setA(toV(ev).x); ev.preventDefault(); } });
+window.addEventListener('pointerup',()=>dragging=false);
+
+/* ============================================================
+   コントロール
+   ============================================================ */
+$('aDist').addEventListener('input',e=>{ state.a=parseFloat(e.target.value); state.anim=false; syncAnim(); updatePanel(); });
+$('fLen').addEventListener('input',e=>{ state.f=parseFloat(e.target.value); updatePanel(); });
+function syncSliders(){ $('aDist').value=state.a.toFixed(1); $('fLen').value=state.f.toFixed(1);
+  $('aDist').style.setProperty('--p',((state.a-2.5)/25.5*100)+'%');
+  $('fLen').style.setProperty('--p',((state.f-5)/8*100)+'%'); }
+
+const animSeg=$('animSeg');
+animSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ state.anim=b.dataset.anim==='1'; syncAnim(); }));
+function syncAnim(){ animSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.dataset.anim==='1')===state.anim)); }
+
+function bindTog(id,key){ const t=$(id); t.classList.toggle('on',state[key]);
+  t.addEventListener('click',()=>{ state[key]=!state[key]; t.classList.toggle('on',state[key]); }); }
+bindTog('screenTog','screen'); bindTog('focusTog','focusMk');
+
+document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); $('tab-'+b.dataset.tab).classList.add('on'); }));
+$('ptog').addEventListener('click',()=>$('aside').classList.add('open'));
+$('pclose').addEventListener('click',()=>$('aside').classList.remove('open'));
+
+/* ============================================================
+   クイズ
+   ============================================================ */
+const QBANK=[
+  {q:'凸レンズの軸に平行に入った光は、通過後どう進む？',o:['反対側の焦点を通る','そのまま平行に進む','レンズの中心へ戻る'],a:0,e:'軸に平行な光は、反対側の焦点を通るように曲がる。'},
+  {q:'レンズの中心を通る光はどう進む？',o:['焦点で曲がる','そのまま直進する','軸に平行になる'],a:1,e:'中心を通る光は曲がらず、まっすぐ進む。'},
+  {q:'物体を焦点距離の2倍（2F）に置くと、像は？',o:['正立の虚像','同じ大きさの倒立実像','像はできない'],a:1,e:'2Fに置くと反対側の2Fに、同じ大きさの倒立実像ができる。'},
+  {q:'物体を焦点Fの内側に置くと、見える像は？',o:['倒立の実像','正立で拡大した虚像','像はできない'],a:1,e:'Fの内側では、物体と同じ側に正立・拡大の虚像。これが虫めがね。'},
+  {q:'スクリーンに映すことができるのは？',o:['実像だけ','虚像だけ','どちらも映る'],a:0,e:'光が実際に集まる実像だけが映る。虚像は映らない。'},
+  {q:'実像の向きは物体に対してどうなる？',o:['同じ向き（正立）','上下が逆（倒立）','左右だけ逆'],a:1,e:'実像は上下左右が逆の倒立像になる。'},
+  {q:'物体をちょうど焦点Fに置くと？',o:['最も大きい実像','像はできない','正立の実像'],a:1,e:'光が平行になり、像は結ばない（像は無限遠）。'},
+  {q:'倒立実像のはんいで物体を遠ざけると、像の大きさは？',o:['大きくなる','小さくなる','変わらない'],a:1,e:'遠ざけるほど実像は小さくなり、レンズに近づく。'},
+];
+let quiz={list:[],i:0,score:0,answered:false};
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startQuiz(){ quiz={list:shuffle(QBANK).slice(0,6),i:0,score:0,answered:false}; renderQ(); }
+function renderQ(){
+  const area=$('quizArea');
+  if(quiz.i>=quiz.list.length){
+    const m=quiz.score===6?'パーフェクト！✨':quiz.score>=4?'いい感じ！':'もう一度チャレンジ！';
+    area.innerHTML='<div class="quiz-result"><div class="score">'+quiz.score+'/6</div><div class="lab">'+m+'</div><button class="btn primary" id="qRetry">もう一度</button></div>';
+    $('qRetry').addEventListener('click',startQuiz); return;
+  }
+  const it=quiz.list[quiz.i]; quiz.answered=false;
+  area.innerHTML='<div class="quiz-prog">Q '+(quiz.i+1)+' / 6 ・ SCORE '+quiz.score+'</div><div class="quiz-q">'+it.q+'</div><div id="qOpts"></div><div class="quiz-fb" id="qFb"></div><button class="btn primary" id="qNext" style="display:none">'+(quiz.i===5?'結果を見る':'次の問題 →')+'</button>';
+  const opts=$('qOpts');
+  it.o.forEach((o,idx)=>{ const b=document.createElement('button'); b.className='quiz-opt'; b.textContent=o;
+    b.addEventListener('click',()=>answer(idx,b)); opts.appendChild(b); });
+}
+function answer(idx,btn){
+  if(quiz.answered)return; quiz.answered=true;
+  const it=quiz.list[quiz.i];
+  [...$('qOpts').children].forEach((b,i)=>{ b.disabled=true; if(i===it.a)b.classList.add('ok'); });
+  const fb=$('qFb');
+  if(idx===it.a){ quiz.score++; fb.className='quiz-fb show ok'; fb.innerHTML='<span class="lab">正解</span>'+it.e; }
+  else{ btn.classList.add('ng'); fb.className='quiz-fb show ng'; fb.innerHTML='<span class="lab">おしい</span>'+it.e; }
+  const nx=$('qNext'); nx.style.display='block';
+  nx.addEventListener('click',()=>{ quiz.i++; renderQ(); },{once:true});
+}
+startQuiz();
+
+/* ============================================================
+   リサイズ＆ループ
+   ============================================================ */
+function resize(){
+  const st=cv.parentElement.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  cv.width=st.width*DPR; cv.height=st.height*DPR;
+  cv.style.width=st.width+'px'; cv.style.height=st.height+'px';
+  scale=Math.min(st.width/VW, st.height/VH);
+  ox=(st.width-VW*scale)/2; oy=(st.height-VH*scale)/2;
+}
+window.addEventListener('resize',resize);
+
+let last=performance.now();
+function loop(t){
+  const dt=Math.min((t-last)/1000,0.05); last=t; tNow=t/1000;
+  if(state.anim){
+    state.a += state.sweepDir*dt*6;        // cm/s
+    if(state.a>=28){state.a=28;state.sweepDir=-1;}
+    if(state.a<=2.5){state.a=2.5;state.sweepDir=1;}
+    syncSliders(); updatePanel();
+  }
+  draw(); requestAnimationFrame(loop);
+}
+resize(); syncSliders(); updatePanel(); syncAnim();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>金星の満ち欠け｜まなびラボ</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050b;
+  --panel:rgba(14,18,32,0.85);
+  --panel-line:rgba(120,150,210,0.18);
+  --amber:#f5a623;
+  --amber-soft:#ffce7a;
+  --cyan:#5fd3e0;
+  --text:#e8ecf6;
+  --dim:#8893ad;
+  --good:#5fe09a;
+  --bad:#ff7a7a;
+  --jp:'Zen Kaku Gothic New',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  background:
+    radial-gradient(1200px 700px at 18% -10%, rgba(245,166,35,0.10), transparent 60%),
+    radial-gradient(900px 800px at 110% 120%, rgba(95,211,224,0.08), transparent 55%),
+    var(--bg);
+  color:var(--text);font-family:var(--jp);
+  display:flex;flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+header{
+  display:flex;align-items:center;gap:14px;
+  padding:11px 18px;border-bottom:1px solid var(--panel-line);
+  background:rgba(6,8,16,0.6);backdrop-filter:blur(8px);flex:none;
+}
+header .accent{width:4px;height:34px;border-radius:3px;
+  background:linear-gradient(var(--amber),var(--amber-soft));box-shadow:0 0 14px rgba(245,166,35,.5)}
+header h1{font-size:18px;font-weight:700;letter-spacing:.04em}
+header .en{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.22em;margin-top:1px}
+header .sys{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);
+  display:flex;align-items:center;gap:7px;letter-spacing:.08em}
+header .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);
+  animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+header .unit{color:var(--amber-soft)}
+
+main{flex:1;display:grid;grid-template-columns:1fr 318px;min-height:0}
+.stage{position:relative;overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;top:12px;left:14px;font-size:11px;line-height:1.7;color:var(--dim);
+  font-family:var(--mono);letter-spacing:.02em;pointer-events:none;
+  background:rgba(6,8,16,.4);padding:6px 9px;border-radius:8px;border:1px solid var(--panel-line)}
+.hint b{color:var(--amber-soft);font-weight:600}
+
+.controls{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;
+  background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
+  padding:11px 16px;backdrop-filter:blur(10px);max-width:94%;
+  box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.seg{display:flex;background:rgba(0,0,0,.3);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+  font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.18s}
+.seg button.on{background:linear-gradient(var(--amber),#e0911a);color:#1a1206;font-weight:700;
+  box-shadow:0 0 12px rgba(245,166,35,.35)}
+.sl{display:flex;align-items:center;gap:9px}
+.sl label{font-size:12px;color:var(--dim)}
+.sl input[type=range]{-webkit-appearance:none;appearance:none;width:160px;height:4px;border-radius:3px;
+  background:linear-gradient(90deg,var(--amber) 0%,var(--amber) var(--p,0%),rgba(255,255,255,.14) var(--p,0%));
+  outline:none;cursor:pointer}
+.sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--amber-soft);box-shadow:0 0 10px rgba(245,166,35,.7);cursor:pointer}
+.sl input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;
+  background:var(--amber-soft);box-shadow:0 0 10px rgba(245,166,35,.7);cursor:pointer}
+.sl b{font-family:var(--mono);font-size:13px;color:var(--amber-soft);min-width:62px;text-align:right}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--dim)}
+.sw{width:38px;height:21px;border-radius:12px;background:rgba(255,255,255,.14);position:relative;transition:.2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+  background:#cfd6e6;transition:.2s}
+.toggle.on .sw{background:var(--cyan)}
+.toggle.on .sw::after{left:19px;background:#06222a}
+.toggle.on{color:var(--text)}
+
+aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);
+  display:flex;flex-direction:column;min-height:0}
+.tabbar{display:flex;border-bottom:1px solid var(--panel-line);flex:none}
+.tabbar button{flex:1;border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+  font-size:13px;font-weight:500;padding:13px 0;cursor:pointer;position:relative;transition:.18s}
+.tabbar button.on{color:var(--text)}
+.tabbar button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:2px;
+  border-radius:2px;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.panelbody{flex:1;overflow-y:auto;padding:16px}
+.tabpane{display:none;animation:fade .25s}
+.tabpane.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.phasehead{display:flex;align-items:center;gap:13px;margin-bottom:6px}
+#miniMoon{flex:none}
+.phasehead .pname{font-size:18px;font-weight:700;line-height:1.25}
+.phasehead .pyomi{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.06em;margin-top:3px}
+
+.meter{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:11px 13px;margin-top:9px;border:1px solid var(--panel-line);border-radius:11px;
+  background:rgba(255,255,255,.02)}
+.meter .k{font-size:12px;color:var(--dim);flex:none}
+.meter .v{font-family:var(--mono);font-size:14px;color:var(--text);text-align:right}
+.meter .v small{color:var(--dim);font-size:11px}
+.meter .v.amber{color:var(--amber-soft)}
+.meter .v.jp{font-family:var(--jp);font-size:12.5px}
+
+.pt{display:flex;gap:9px;margin-bottom:13px;font-size:13.5px;line-height:1.72}
+.pt .b{color:var(--amber);flex:none;margin-top:1px}
+.pt b{color:var(--amber-soft);font-weight:700}
+.note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:6px;
+  padding:11px 13px;border-left:2px solid var(--cyan);background:rgba(95,211,224,.05);border-radius:0 8px 8px 0}
+
+.quiz-q{font-size:14.5px;font-weight:500;line-height:1.7;margin-bottom:14px}
+.quiz-prog{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:10px}
+.quiz-opt{display:block;width:100%;text-align:left;border:1px solid var(--panel-line);
+  background:rgba(255,255,255,.02);color:var(--text);font-family:var(--jp);font-size:13.5px;
+  padding:12px 14px;border-radius:11px;margin-bottom:9px;cursor:pointer;transition:.15s}
+.quiz-opt:hover{border-color:rgba(120,150,210,.45);background:rgba(255,255,255,.05)}
+.quiz-opt.ok{border-color:var(--good);background:rgba(95,224,154,.12);color:var(--good)}
+.quiz-opt.ng{border-color:var(--bad);background:rgba(255,122,122,.12);color:var(--bad)}
+.quiz-opt:disabled{cursor:default}
+.quiz-fb{font-size:13px;line-height:1.7;margin-top:10px;padding:12px 14px;border-radius:11px;display:none}
+.quiz-fb.show{display:block}
+.quiz-fb.ok{background:rgba(95,224,154,.1);border:1px solid rgba(95,224,154,.3)}
+.quiz-fb.ng{background:rgba(255,122,122,.1);border:1px solid rgba(255,122,122,.3)}
+.quiz-fb .lab{font-weight:700;margin-right:6px}
+.quiz-fb.ok .lab{color:var(--good)}.quiz-fb.ng .lab{color:var(--bad)}
+.btn{border:1px solid var(--panel-line);background:rgba(255,255,255,.04);color:var(--text);
+  font-family:var(--jp);font-size:13px;font-weight:600;padding:11px 18px;border-radius:11px;
+  cursor:pointer;margin-top:6px;transition:.15s}
+.btn:hover{background:rgba(255,255,255,.09)}
+.btn.primary{background:linear-gradient(var(--amber),#e0911a);color:#1a1206;border:0;box-shadow:0 0 14px rgba(245,166,35,.3)}
+.quiz-result{text-align:center;padding:18px 0}
+.quiz-result .score{font-family:var(--mono);font-size:42px;font-weight:600;color:var(--amber-soft)}
+.quiz-result .lab{font-size:13px;color:var(--dim);margin:6px 0 18px}
+
+.panel-toggle{display:none}
+@media(max-width:820px){
+  main{grid-template-columns:1fr}
+  aside{position:fixed;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    background:rgba(8,11,20,.97);backdrop-filter:blur(12px)}
+  aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+  .panel-toggle{display:flex;position:absolute;top:12px;right:14px;z-index:20;
+    align-items:center;gap:6px;border:1px solid var(--panel-line);background:var(--panel);
+    color:var(--text);font-family:var(--jp);font-size:12px;font-weight:600;
+    padding:8px 13px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+  .panel-close{display:block;position:absolute;top:10px;right:12px;z-index:5;
+    border:0;background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;
+    border-radius:9px;font-size:17px;cursor:pointer}
+  .hint{font-size:10px;top:auto;bottom:78px}
+  .controls{bottom:12px;gap:11px;padding:10px 13px}
+  .sl input[type=range]{width:124px}
+}
+.panel-close{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="accent"></div>
+  <div>
+    <h1>金星の満ち欠け</h1>
+    <div class="en">VENUS · PHASES &amp; APPARENT SIZE</div>
+  </div>
+  <div class="sys"><span class="dot"></span>SYS ● ONLINE&nbsp;｜&nbsp;<span class="unit">地学</span></div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint">1本指ドラッグ＝<b>金星をつかんで動かす</b><br>位置をタップ＝<b>その位置へジャンプ</b></div>
+    <button class="panel-toggle" id="ptog">☰ データ</button>
+
+    <div class="controls">
+      <div class="seg" id="animSeg">
+        <button data-anim="0" class="on">⏸ 停止</button>
+        <button data-anim="1">▶ 公転</button>
+      </div>
+      <div class="sl">
+        <label>会合からの日数</label>
+        <input type="range" id="day" min="0" max="583.92" step="0.5" value="0">
+        <b id="dayVal">0 日</b>
+      </div>
+      <div class="toggle on" id="rayTog"><span>太陽の光</span><span class="sw"></span></div>
+      <div class="toggle on" id="ghostTog"><span>軌道上の金星</span><span class="sw"></span></div>
+    </div>
+  </div>
+
+  <aside id="aside">
+    <button class="panel-close" id="pclose">×</button>
+    <div class="tabbar">
+      <button class="on" data-tab="data">金星データ</button>
+      <button data-tab="explain">解説</button>
+      <button data-tab="quiz">クイズ</button>
+    </div>
+    <div class="panelbody">
+
+      <div class="tabpane on" id="tab-data">
+        <div class="phasehead">
+          <canvas id="miniMoon" width="58" height="58"></canvas>
+          <div>
+            <div class="pname" id="pName">満ちた金星</div>
+            <div class="pyomi" id="pYomi">外合付近 / 小さく丸い</div>
+          </div>
+        </div>
+        <div class="meter"><span class="k">見え方</span><span class="v jp" id="mView">―</span></div>
+        <div class="meter"><span class="k">輝いて見える割合</span><span class="v" id="mLit">0 <small>%</small></span></div>
+        <div class="meter"><span class="k">太陽との角度（離角）</span><span class="v" id="mElong">0°</span></div>
+        <div class="meter"><span class="k">地球からの距離</span><span class="v" id="mDist">0 <small>AU</small></span></div>
+        <div class="meter"><span class="k">見かけの大きさ</span><span class="v amber" id="mSize">×1.0</span></div>
+        <div class="note" id="mNote">金星も太陽の光を反射して光る。光る半分はいつも太陽側。地球より内側を回るので、形（満ち欠け）と見かけの大きさが同時に変わる。</div>
+      </div>
+
+      <div class="tabpane" id="tab-explain">
+        <div class="pt"><span class="b">●</span><span>金星は地球より<b>内側</b>を回る「内惑星」。だから月と同じように<b>満ち欠け</b>して見える。光る半分はいつも太陽側。</span></div>
+        <div class="pt"><span class="b">●</span><span>月と決定的に違うのは<b>大きさも変わる</b>こと。<b>内合</b>に近い＝地球に近い＝大きいけれど細い三日月状。<b>外合</b>に近い＝遠い＝小さいけれど丸い。形と大きさが逆向きに連動する。</span></div>
+        <div class="pt"><span class="b">●</span><span>金星は太陽から大きく離れない（離角は最大でも約<b>46°</b>）。だから<b>真夜中には見えない</b>。見えるのは日の出前か日の入り後の、太陽に近い空だけ。</span></div>
+        <div class="pt"><span class="b">●</span><span>夕方の西の空に見えれば<b>宵の明星</b>、明け方の東の空に見えれば<b>明けの明星</b>。同じ金星が時期で呼び名を変える。</span></div>
+        <div class="pt"><span class="b">●</span><span>この満ち欠けを望遠鏡で確かめた<b>ガリレオ</b>は、「金星は太陽のまわりを回っている」と気づいた。これが地動説の有力な証拠になった。</span></div>
+        <div class="note">確かめ方：公転をONにして、上の図で金星が<b>地球に近づくほど大きく・細く</b>、<b>遠ざかるほど小さく・丸く</b>なることに注目。右の望遠鏡像と見比べよう。</div>
+      </div>
+
+      <div class="tabpane" id="tab-quiz">
+        <div id="quizArea"></div>
+      </div>
+
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   金星の満ち欠け・見かけの大きさ シミュレーター / まなびラボ
+   ============================================================ */
+const TAU=Math.PI*2, DEG=Math.PI/180;
+const SYNODIC=583.92;            // 会合周期(日)
+const dV=0.723, dE=1.0;          // 公転半径(AU)
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+
+const VW=640, VH=460;
+let scale=1, ox=0, oy=0, DPR=1;
+
+/* シーン配置（仮想座標）：太陽中心・地球は下に固定 */
+const SUN={x:250,y:222};
+const RE=152;                    // 地球公転半径(px)= 1AU
+const RV=RE*dV;                  // 金星公転半径(px)
+const EARTH={x:SUN.x, y:SUN.y+RE};
+const PX_PER_AU=RE;
+const GP={x:524,y:226,r:92};     // 右：望遠鏡像パネル
+
+const state={ day:0, anim:false, rays:true, ghosts:true };
+
+/* 会合日数 → 金星の軌道角（数学系・反時計回り、外合=上） */
+function venusAngle(day){ return 90*DEG + TAU*(day/SYNODIC); }
+function venusPos(day){
+  const a=venusAngle(day);
+  return { x:SUN.x + RV*Math.cos(a), y:SUN.y - RV*Math.sin(a) };
+}
+function distAU(p){ return Math.hypot(p.x-EARTH.x, p.y-EARTH.y)/PX_PER_AU; }
+function angBetween(ax,ay,bx,by){
+  const d=(ax*bx+ay*by)/(Math.hypot(ax,ay)*Math.hypot(bx,by));
+  return Math.acos(Math.max(-1,Math.min(1,d)));
+}
+/* 輝面比 k = (1+cosα)/2  α=太陽-金星-地球角 */
+function litFrac(p){
+  const a=angBetween(SUN.x-p.x, SUN.y-p.y, EARTH.x-p.x, EARTH.y-p.y);
+  return (1+Math.cos(a))/2;
+}
+/* 離角（地球から見た 太陽と金星の角度） */
+function elongDeg(p){
+  return angBetween(SUN.x-EARTH.x,SUN.y-EARTH.y, p.x-EARTH.x,p.y-EARTH.y)/DEG;
+}
+/* 太陽が金星の右側にあるか（望遠鏡像で右が光る） */
+function litRight(p){ return (SUN.x-p.x) > 0; }
+
+/* ============================================================
+   位相描画（輝面比k と 光る側 で一般化）
+   ============================================================ */
+function drawPhaseK(c,cx,cy,R,k,right,opt){
+  opt=opt||{};
+  c.save();
+  c.beginPath(); c.arc(cx,cy,R,0,TAU); c.fillStyle=opt.dark||'#3a2f1c'; c.fill();
+  const xr=R*(1-2*k);            // ターミネーター x半径（符号付）
+  c.beginPath();
+  if(right){
+    c.arc(cx,cy,R,-Math.PI/2,Math.PI/2,false);
+    c.ellipse(cx,cy,Math.abs(xr),R,0,Math.PI/2,-Math.PI/2,xr>0);
+  }else{
+    c.arc(cx,cy,R,Math.PI/2,-Math.PI/2,false);
+    c.ellipse(cx,cy,Math.abs(xr),R,0,-Math.PI/2,Math.PI/2,xr>0);
+  }
+  c.closePath(); c.fillStyle=opt.lit||'#ffd98a'; c.fill();
+  c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=1;
+  c.beginPath(); c.arc(cx,cy,R,0,TAU); c.stroke();
+  c.restore();
+}
+
+/* 上面視の天体：光る半分=太陽向き */
+function drawTopBody(c,x,y,r,litCol,darkCol){
+  const ang=Math.atan2(SUN.y-y, SUN.x-x);     // 太陽方向(canvas)
+  c.beginPath(); c.arc(x,y,r,0,TAU); c.fillStyle=darkCol; c.fill();
+  c.beginPath(); c.arc(x,y,r,ang-Math.PI/2,ang+Math.PI/2,false); c.closePath();
+  c.fillStyle=litCol; c.fill();
+  c.strokeStyle='rgba(255,255,255,.15)'; c.lineWidth=1; c.beginPath(); c.arc(x,y,r,0,TAU); c.stroke();
+}
+
+/* ============================================================
+   メイン描画
+   ============================================================ */
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,cv.width/DPR,cv.height/DPR);
+  ctx.save(); ctx.translate(ox,oy); ctx.scale(scale,scale);
+
+  const vp=venusPos(state.day);
+
+  /* 太陽光（左上から放射状の代わりに、内側を満たす淡い光） */
+  if(state.rays){
+    const rg=ctx.createRadialGradient(SUN.x,SUN.y,20,SUN.x,SUN.y,RE+10);
+    rg.addColorStop(0,'rgba(245,166,35,0.10)'); rg.addColorStop(1,'rgba(245,166,35,0)');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(SUN.x,SUN.y,RE+10,0,TAU); ctx.fill();
+    // 金星に当たる光線
+    ctx.strokeStyle='rgba(245,166,35,0.3)'; ctx.lineWidth=1.2; ctx.setLineDash([5,6]);
+    ctx.beginPath(); ctx.moveTo(SUN.x,SUN.y); ctx.lineTo(vp.x,vp.y); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  /* 地球軌道 */
+  ctx.strokeStyle='rgba(95,170,255,0.16)'; ctx.lineWidth=1; ctx.setLineDash([3,6]);
+  ctx.beginPath(); ctx.arc(SUN.x,SUN.y,RE,0,TAU); ctx.stroke();
+  /* 金星軌道 */
+  ctx.strokeStyle='rgba(245,166,35,0.28)'; ctx.setLineDash([3,5]);
+  ctx.beginPath(); ctx.arc(SUN.x,SUN.y,RV,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+
+  /* 太陽 */
+  const sg=ctx.createRadialGradient(SUN.x,SUN.y,3,SUN.x,SUN.y,46);
+  sg.addColorStop(0,'#fff4d6'); sg.addColorStop(.45,'#f5a623'); sg.addColorStop(1,'rgba(245,166,35,0)');
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(SUN.x,SUN.y,46,0,TAU); ctx.fill();
+  ctx.fillStyle='#ffe9b0'; ctx.beginPath(); ctx.arc(SUN.x,SUN.y,15,0,TAU); ctx.fill();
+  label('太陽',SUN.x,SUN.y-26,'11px','#ffce7a');
+
+  /* 軌道上ゴースト（距離で大きさ・正しい位相） */
+  if(state.ghosts){
+    for(let i=0;i<12;i++){
+      const gd=i/12*SYNODIC, gp=venusPos(gd);
+      const gk=litFrac(gp), gr=Math.max(4.5,Math.min(13, 4.2/distAU(gp)));
+      drawPhaseK(ctx,gp.x,gp.y,gr,gk,litRight(gp),{lit:'#e7c074',dark:'#2a2417'});
+    }
+  }
+
+  /* 主要配置ラベル（外合・内合・最大離角） */
+  label('外合',SUN.x,SUN.y-RV-12,'10px','rgba(170,182,210,.8)',true);
+  label('内合',SUN.x,SUN.y+RV+13,'10px','rgba(170,182,210,.8)',true);
+  drawElongLabel();
+
+  /* 視線 地球→金星 */
+  ctx.strokeStyle='rgba(95,211,224,0.5)'; ctx.lineWidth=1.4; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(EARTH.x,EARTH.y); ctx.lineTo(vp.x,vp.y); ctx.stroke(); ctx.setLineDash([]);
+  /* 地球→太陽 */
+  ctx.strokeStyle='rgba(95,170,255,0.3)'; ctx.setLineDash([2,5]);
+  ctx.beginPath(); ctx.moveTo(EARTH.x,EARTH.y); ctx.lineTo(SUN.x,SUN.y); ctx.stroke(); ctx.setLineDash([]);
+
+  /* 地球 */
+  drawTopBody(ctx,EARTH.x,EARTH.y,16,'#5b8fd0','#0c1830');
+  label('地球',EARTH.x,EARTH.y+30,'11px','#bcd0ff');
+
+  /* 現在の金星 */
+  drawTopBody(ctx,vp.x,vp.y,11,'#ffd98a','#4a3a1e');
+  ctx.strokeStyle='rgba(245,166,35,.95)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(vp.x,vp.y,16,0,TAU); ctx.stroke();
+  label('金星',vp.x,vp.y-23,'11px','#ffce7a');
+
+  /* ============ 右：望遠鏡で見た金星 ============ */
+  roundRect(ctx, GP.x-GP.r-14, GP.y-GP.r-30, (GP.r+14)*2, (GP.r+30)*2+12, 16);
+  ctx.fillStyle='rgba(6,9,18,0.55)'; ctx.fill();
+  ctx.strokeStyle='rgba(120,150,210,.18)'; ctx.lineWidth=1; ctx.stroke();
+  label('望遠鏡で見た金星',GP.x,GP.y-GP.r-12,'12px','#bcd0ff');
+
+  const el=elongDeg(vp), k=litFrac(vp), dist=distAU(vp);
+  const Rmax=GP.r*0.84;                       // 内合(最接近)時の最大サイズ
+  const Rtel=Math.max(7, Math.min(Rmax, Rmax*0.277/dist));
+  // 最大サイズの参照円（破線）
+  ctx.strokeStyle='rgba(120,150,210,.22)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.arc(GP.x,GP.y,Rmax,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  label('（最大の大きさ）',GP.x,GP.y+Rmax+14,'9px','rgba(136,147,173,.6)',true);
+
+  if(el<9){
+    // 太陽に近すぎて見えない
+    ctx.fillStyle='rgba(245,166,35,.13)'; ctx.beginPath(); ctx.arc(GP.x,GP.y,Rtel,0,TAU); ctx.fill();
+    label('☀ 太陽に近すぎて',GP.x,GP.y-4,'12px','#8893ad');
+    label('見えない',GP.x,GP.y+14,'12px','#8893ad');
+  }else{
+    drawPhaseK(ctx,GP.x,GP.y,Rtel,k,litRight(vp),{lit:'#ffe2a0',dark:'#3a2f1c'});
+    // 太陽方向マーカー
+    const sx=GP.x+(litRight(vp)?1:-1)*(Rtel+13);
+    ctx.fillStyle='#ffce7a'; ctx.font="12px 'Zen Kaku Gothic New'"; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('☀',sx,GP.y);
+  }
+
+  ctx.restore();
+}
+
+/* 最大離角ラベル（左=宵の明星・右=明けの明星） */
+function drawElongLabel(){
+  // 接点の太陽中心角 = O→E方向 ± β,  cosβ=dV/dE
+  const beta=Math.acos(dV/dE);
+  const baseAng=Math.atan2(EARTH.y-SUN.y, EARTH.x-SUN.x); // 下(=+y) → π/2(canvas)
+  for(const sgn of [1,-1]){
+    const a=baseAng+sgn*beta;
+    const x=SUN.x+RV*Math.cos(a), y=SUN.y+RV*Math.sin(a);
+    const isLeft = x<SUN.x;
+    const txt = isLeft ? '東方最大離角' : '西方最大離角';
+    const sub = isLeft ? '宵の明星' : '明けの明星';
+    label(txt, x+(isLeft?-2:2), y+16, '10px', 'rgba(255,206,122,.85)', true);
+    label(sub, x+(isLeft?-2:2), y+29, '9px', 'rgba(136,147,173,.75)', true);
+  }
+}
+
+/* helpers */
+function label(txt,x,y,size,col,plain){
+  ctx.save();
+  ctx.font='600 '+(size||'12px')+" 'Zen Kaku Gothic New',sans-serif";
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=col||'#e8ecf6';
+  ctx.fillText(txt,x,y); ctx.restore();
+}
+function roundRect(c,x,y,w,h,r){
+  c.beginPath(); c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+
+/* ============================================================
+   位相データ → ことば
+   ============================================================ */
+function phaseName(k,el){
+  if(el<9) return ['ほとんど見えない','合の付近 / 太陽方向'];
+  if(k>0.92) return ['満ちた金星','外合付近 / 小さく丸い'];
+  if(k>0.62) return ['ふくらんだ形','半月〜満月の間'];
+  if(k>0.40) return ['半月状','最大離角の付近'];
+  if(k>0.12) return ['三日月状','内合に近い / 大きい'];
+  return ['細い三日月','内合の付近 / 最も大きい'];
+}
+function viewName(p,el){
+  if(el<9) return '見えない（太陽に近い）';
+  return (p.x<SUN.x) ? '宵の明星（夕方・西の空）' : '明けの明星（明け方・東の空）';
+}
+
+/* ============================================================
+   UI更新（textContentのみ）
+   ============================================================ */
+const $=id=>document.getElementById(id);
+function updatePanel(){
+  const vp=venusPos(state.day);
+  const k=litFrac(vp), el=elongDeg(vp), dist=distAU(vp);
+  const sizeRatio=1.72/dist;              // 外合(=1.72AU)を1.0とした倍率
+
+  $('dayVal').textContent=Math.round(state.day)+' 日';
+  $('day').style.setProperty('--p',(state.day/SYNODIC*100)+'%');
+
+  const mc=$('miniMoon'), mx=mc.getContext('2d');
+  mx.clearRect(0,0,58,58);
+  if(el<9){ mx.fillStyle='rgba(245,166,35,.18)'; mx.beginPath(); mx.arc(29,29,24,0,TAU); mx.fill(); }
+  else drawPhaseK(mx,29,29,24,k,litRight(vp),{lit:'#ffd98a',dark:'#3a2f1c'});
+
+  const [nm,yomi]=phaseName(k,el);
+  $('pName').textContent=nm; $('pYomi').textContent=yomi;
+  $('mView').textContent=viewName(vp,el);
+  $('mLit').innerHTML=Math.round(k*100)+' <small>%</small>';
+  $('mElong').textContent=el.toFixed(0)+'°';
+  $('mDist').innerHTML=dist.toFixed(2)+' <small>AU</small>';
+  $('mSize').textContent='×'+sizeRatio.toFixed(1);
+}
+
+/* ============================================================
+   入力（ドラッグ／タップ）
+   ============================================================ */
+function toVirtual(ev){
+  const r=cv.getBoundingClientRect();
+  return { x:((ev.clientX-r.left)-ox)/scale, y:((ev.clientY-r.top)-oy)/scale };
+}
+function setDayFromPoint(vx,vy){
+  const a=Math.atan2(SUN.y-vy, vx-SUN.x);     // venusAngle系
+  let d=((a-90*DEG)/TAU)*SYNODIC;
+  d=((d%SYNODIC)+SYNODIC)%SYNODIC;
+  state.day=d;
+}
+let dragging=false;
+cv.addEventListener('pointerdown',ev=>{
+  const v=toVirtual(ev), vp=venusPos(state.day);
+  const dm=Math.hypot(v.x-vp.x,v.y-vp.y);
+  const ds=Math.hypot(v.x-SUN.x,v.y-SUN.y);
+  if(dm<42 || Math.abs(ds-RV)<46){
+    dragging=true; state.anim=false; syncAnim();
+    setDayFromPoint(v.x,v.y); syncDay(); updatePanel(); ev.preventDefault();
+  }
+});
+cv.addEventListener('pointermove',ev=>{ if(!dragging)return;
+  const v=toVirtual(ev); setDayFromPoint(v.x,v.y); syncDay(); updatePanel(); ev.preventDefault(); });
+window.addEventListener('pointerup',()=>dragging=false);
+
+/* ============================================================
+   コントロール
+   ============================================================ */
+$('day').addEventListener('input',e=>{ state.day=parseFloat(e.target.value);
+  state.anim=false; syncAnim(); updatePanel(); });
+function syncDay(){ $('day').value=state.day.toFixed(1);
+  $('day').style.setProperty('--p',(state.day/SYNODIC*100)+'%'); }
+
+const animSeg=$('animSeg');
+animSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  state.anim=b.dataset.anim==='1'; syncAnim(); }));
+function syncAnim(){ animSeg.querySelectorAll('button').forEach(b=>
+  b.classList.toggle('on',(b.dataset.anim==='1')===state.anim)); }
+
+function bindTog(id,key){ const t=$(id);
+  t.addEventListener('click',()=>{ state[key]=!state[key]; t.classList.toggle('on',state[key]); }); }
+bindTog('rayTog','rays'); bindTog('ghostTog','ghosts');
+
+document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); $('tab-'+b.dataset.tab).classList.add('on'); }));
+
+$('ptog').addEventListener('click',()=>$('aside').classList.add('open'));
+$('pclose').addEventListener('click',()=>$('aside').classList.remove('open'));
+
+/* ============================================================
+   クイズ
+   ============================================================ */
+const QBANK=[
+  {q:'金星が月のように満ち欠けして見えるのはなぜ？',o:['地球より内側を公転する内惑星だから','金星が自分で光るから','地球の影が映るから'],a:0,e:'金星は地球より内側を回る内惑星。太陽の光を反射し、見る角度で満ち欠けする。'},
+  {q:'金星が最も大きく見えるのはどんなとき？',o:['外合に近いとき','内合に近いとき','満月状のとき'],a:1,e:'内合に近い＝地球に最も近い＝大きく見える。ただし形は細い三日月状。'},
+  {q:'金星が丸い形（満月状）に見えるのはどんなとき？',o:['外合付近','内合付近','最大離角'],a:0,e:'外合付近では太陽の向こう側で丸く見える。でも遠いので小さい。'},
+  {q:'真夜中に金星が見えないのはなぜ？',o:['明るすぎるから','太陽から大きく離れないから','自転が速いから'],a:1,e:'内惑星なので太陽から最大でも約46°しか離れない。だから真夜中の空には来ない。'},
+  {q:'夕方の西の空に見える金星の呼び名は？',o:['宵の明星','明けの明星','流れ星'],a:0,e:'夕方の西＝宵の明星。明け方の東＝明けの明星。同じ金星の別の時期。'},
+  {q:'金星の満ち欠けを観察し、地動説の証拠とした人物は？',o:['ニュートン','ガリレオ','コペルニクス'],a:1,e:'ガリレオが望遠鏡で金星の満ち欠けを確認し、太陽中心の動きの証拠とした。'},
+  {q:'内惑星の組み合わせはどれ？',o:['火星と木星','水星と金星','土星と天王星'],a:1,e:'地球より内側を回るのは水星と金星。これらだけが満ち欠けと大きさの変化を見せる。'},
+  {q:'最大離角のとき、金星はどんな形に見える？',o:['まん丸','半月のような形','見えない'],a:1,e:'最大離角では太陽-金星-地球がほぼ直角になり、半分が光る半月状に見える。'},
+];
+let quiz={list:[],i:0,score:0,answered:false};
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startQuiz(){ quiz={list:shuffle(QBANK).slice(0,6),i:0,score:0,answered:false}; renderQ(); }
+function renderQ(){
+  const area=$('quizArea');
+  if(quiz.i>=quiz.list.length){
+    const m=quiz.score===6?'パーフェクト！✨':quiz.score>=4?'いい感じ！':'もう一度チャレンジ！';
+    area.innerHTML=`<div class="quiz-result"><div class="score">${quiz.score}/6</div>
+      <div class="lab">${m}</div><button class="btn primary" id="qRetry">もう一度</button></div>`;
+    $('qRetry').addEventListener('click',startQuiz); return;
+  }
+  const it=quiz.list[quiz.i]; quiz.answered=false;
+  area.innerHTML=`<div class="quiz-prog">Q ${quiz.i+1} / 6 ・ SCORE ${quiz.score}</div>
+    <div class="quiz-q">${it.q}</div><div id="qOpts"></div>
+    <div class="quiz-fb" id="qFb"></div>
+    <button class="btn primary" id="qNext" style="display:none">${quiz.i===5?'結果を見る':'次の問題 →'}</button>`;
+  const opts=$('qOpts');
+  it.o.forEach((o,idx)=>{ const b=document.createElement('button');
+    b.className='quiz-opt'; b.textContent=o; b.addEventListener('click',()=>answer(idx,b)); opts.appendChild(b); });
+}
+function answer(idx,btn){
+  if(quiz.answered)return; quiz.answered=true;
+  const it=quiz.list[quiz.i];
+  [...$('qOpts').children].forEach((b,i)=>{ b.disabled=true; if(i===it.a)b.classList.add('ok'); });
+  const fb=$('qFb');
+  if(idx===it.a){ quiz.score++; fb.className='quiz-fb show ok'; fb.innerHTML=`<span class="lab">正解</span>${it.e}`; }
+  else{ btn.classList.add('ng'); fb.className='quiz-fb show ng'; fb.innerHTML=`<span class="lab">おしい</span>${it.e}`; }
+  const nx=$('qNext'); nx.style.display='block';
+  nx.addEventListener('click',()=>{ quiz.i++; renderQ(); },{once:true});
+}
+startQuiz();
+
+/* ============================================================
+   リサイズ＆ループ
+   ============================================================ */
+function resize(){
+  const st=cv.parentElement.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  cv.width=st.width*DPR; cv.height=st.height*DPR;
+  cv.style.width=st.width+'px'; cv.style.height=st.height+'px';
+  scale=Math.min(st.width/VW, st.height/VH);
+  ox=(st.width - VW*scale)/2; oy=(st.height - VH*scale)/2;
+}
+window.addEventListener('resize',resize);
+
+let last=performance.now();
+function loop(t){
+  const dt=Math.min((t-last)/1000,0.05); last=t;
+  if(state.anim){
+    state.day+=dt*(SYNODIC/16);
+    if(state.day>=SYNODIC) state.day-=SYNODIC;
+    syncDay(); updatePanel();
+  }
+  draw(); requestAnimationFrame(loop);
+}
+
+resize(); updatePanel(); syncAnim();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
