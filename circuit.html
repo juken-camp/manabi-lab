@@ -147,6 +147,53 @@
     .sl input[type=range]{width:92px}
   }
 </style>
+
+<style id="manabi-responsive">
+/* ===== まなびラボ 表示強化（横画面・スマホ対応 / 自動追加） ===== */
+.hint{transition:opacity .4s ease}
+.hint.is-hidden{opacity:0;pointer-events:none}
+
+/* 横向きスマホなど「高さが低い画面」でも右パネルを引き出し式にして、
+   シミュ本体に画面を最大限ゆずる（幅820px版だけでは横向きスマホを拾えないため） */
+@media (max-height:520px) and (max-width:1100px){
+  main{grid-template-columns:1fr !important}
+  aside{position:fixed !important;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);
+    border-left:1px solid var(--panel-line)}
+  aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+  .panel-toggle{display:flex !important;position:absolute;top:10px;right:12px;z-index:20;
+    align-items:center;gap:6px;border:1px solid var(--panel-line);background:var(--panel);
+    color:var(--text);font-family:var(--jp);font-size:12px;font-weight:600;
+    padding:7px 12px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+  .panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
+    background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;
+    border-radius:9px;font-size:17px;cursor:pointer}
+  .hint{top:10px !important;left:10px !important;bottom:auto !important;right:auto !important;
+    font-size:10px !important;max-width:52vw;line-height:1.6}
+  .controls{bottom:8px !important;gap:8px 11px !important;padding:8px 11px !important;max-width:96% !important}
+  .controls .sl input[type=range]{width:104px !important}
+  .controls .sl label{font-size:11px !important}
+  .controls .sl b{min-width:46px !important}
+  .controls .seg button{padding:6px 10px !important}
+}
+
+/* 縦向きスマホ：横向きをやさしく案内（閉じれば縦のままでも使える） */
+.rotate-tip{display:none}
+@media (max-width:820px) and (orientation:portrait){
+  .rotate-tip{display:flex;position:fixed;inset:0;z-index:90;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;padding:32px;text-align:center;
+    background:rgba(4,5,11,.94);backdrop-filter:blur(7px)}
+  .rotate-tip.is-hidden{display:none}
+  .rotate-tip .rt-ic{font-size:50px;animation:rt-turn 2.6s ease-in-out infinite;transform-origin:center}
+  @keyframes rt-turn{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(80deg)}}
+  .rotate-tip .rt-msg{font-size:16px;font-weight:700;line-height:1.7;color:var(--text)}
+  .rotate-tip .rt-sub{font-size:12px;color:var(--dim);margin-top:-6px}
+  .rotate-tip .rt-x{margin-top:4px;border:1px solid var(--panel-line);
+    background:rgba(255,255,255,.05);color:var(--text);font-family:var(--jp);
+    font-size:13px;font-weight:600;padding:11px 22px;border-radius:12px;cursor:pointer}
+}
+</style>
 </head>
 <body>
 <header>
@@ -169,6 +216,8 @@
         <button data-m="single" class="on">基本</button>
         <button data-m="series">直列</button>
         <button data-m="parallel">並列</button>
+        <button data-m="combo1">複合①</button>
+        <button data-m="combo2">複合②</button>
       </div>
       <div class="sl"><label>電圧</label><input type="range" id="volt" min="0" max="6" step="0.5" value="4.5"><b id="voltv">4.5 V</b></div>
       <div class="sl"><label>抵抗①</label><input type="range" id="r1" min="10" max="50" step="5" value="20"><b id="r1v">20 Ω</b></div>
@@ -208,40 +257,76 @@ window.addEventListener('resize',resize);
 /* ===== 回路の計算＋配置 ===== */
 function build(){
   const on = closed && V>0;
-  let paths=[], bulbs=[], battery, sw, Itot=0, Rtot=0;
+  let paths=[], bulbs=[], battery, sw, Itot=0, Rtot=0, fit;
 
   if(mode==='single'){
-    const xL=150,xR=510,yT=130,yB=330;
+    const xL=150,xR=510,yT=140,yB=350;
     Rtot=R1; Itot = on? V/R1 : 0;
     const loop=[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yT},{x:330,y:yT},{x:xR,y:yT},{x:xR,y:yB},{x:330,y:yB}];
     paths=[{pts:loop,current:Itot}];
-    bulbs=[{x:330,y:yT,I:Itot,Vd:Itot*R1,P:Itot*Itot*R1,label:'豆電球'}];
-    battery={x:330,y:yB,horiz:true}; sw={x:xR,y:230,horiz:false};
+    bulbs=[{x:330,y:yT,I:Itot,Vd:Itot*R1,P:Itot*Itot*R1,label:'豆電球',n:''}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xR,y:(yT+yB)/2,horiz:false};
+    fit={x:138,y:96,w:384,h:300};
   }
   else if(mode==='series'){
-    const xL=150,xR=510,yT=130,yB=330;
+    const xL=150,xR=510,yT=140,yB=350;
     Rtot=R1+R2; Itot = on? V/Rtot : 0;
     const loop=[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yT},{x:250,y:yT},{x:400,y:yT},{x:xR,y:yT},{x:xR,y:yB},{x:330,y:yB}];
     paths=[{pts:loop,current:Itot}];
-    bulbs=[{x:250,y:yT,I:Itot,Vd:Itot*R1,P:Itot*Itot*R1,label:'豆電球①'},
-           {x:400,y:yT,I:Itot,Vd:Itot*R2,P:Itot*Itot*R2,label:'豆電球②'}];
-    battery={x:330,y:yB,horiz:true}; sw={x:xR,y:230,horiz:false};
+    bulbs=[{x:250,y:yT,I:Itot,Vd:Itot*R1,P:Itot*Itot*R1,label:'豆電球①',n:'①'},
+           {x:400,y:yT,I:Itot,Vd:Itot*R2,P:Itot*Itot*R2,label:'豆電球②',n:'②'}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xR,y:(yT+yB)/2,horiz:false};
+    fit={x:138,y:96,w:384,h:300};
   }
-  else{ // parallel
-    const xL=170,xR=490,yB=360,yNode=240,yUp=150;
+  else if(mode==='parallel'){
+    /* 1本の主線が中央を通り、そこから上下へ均等に枝分かれして、また1本に戻る */
+    const xL=150,xR=510,yMid=246,yU=166,yD=326,yB=396,jL=258,jR=402;
     const I1 = on? V/R1 : 0, I2 = on? V/R2 : 0; Itot=I1+I2;
     Rtot = 1/(1/R1+1/R2);
-    const mainIn=[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yNode}];
-    const br1=[{x:xL,y:yNode},{x:xL,y:yUp},{x:330,y:yUp},{x:xR,y:yUp},{x:xR,y:yNode}];
-    const br2=[{x:xL,y:yNode},{x:330,y:yNode},{x:xR,y:yNode}];
-    const mainOut=[{x:xR,y:yNode},{x:xR,y:yB},{x:330,y:yB}];
-    paths=[{pts:mainIn,current:Itot},{pts:br1,current:I1},{pts:br2,current:I2},{pts:mainOut,current:Itot}];
-    bulbs=[{x:330,y:yUp,I:I1,Vd:on?V:0,P:V*I1,label:'豆電球①'},
-           {x:330,y:yNode,I:I2,Vd:on?V:0,P:V*I2,label:'豆電球②'}];
-    battery={x:330,y:yB,horiz:true}; sw={x:xL,y:300,horiz:false};
+    const mainIn =[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yMid},{x:jL,y:yMid}];
+    const top    =[{x:jL,y:yMid},{x:jL,y:yU},{x:330,y:yU},{x:jR,y:yU},{x:jR,y:yMid}];
+    const bot    =[{x:jL,y:yMid},{x:jL,y:yD},{x:330,y:yD},{x:jR,y:yD},{x:jR,y:yMid}];
+    const mainOut=[{x:jR,y:yMid},{x:xR,y:yMid},{x:xR,y:yB},{x:330,y:yB}];
+    paths=[{pts:mainIn,current:Itot},{pts:top,current:I1},{pts:bot,current:I2},{pts:mainOut,current:Itot}];
+    bulbs=[{x:330,y:yU,I:I1,Vd:on?V:0,P:V*I1,label:'豆電球①',n:'①'},
+           {x:330,y:yD,I:I2,Vd:on?V:0,P:V*I2,label:'豆電球②',n:'②'}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xL,y:(yMid+yB)/2,horiz:false};
+    fit={x:135,y:116,w:390,h:316};
+  }
+  else if(mode==='combo1'){
+    /* ①を直列 → そのあと上下へ均等に枝分かれして②③が並列 */
+    const xL=150,xR=520,yMid=246,yU=166,yD=326,yB=396,xA=215,jL=300,jR=448,cx=374;
+    const Rpar=R2/2; Rtot=R1+Rpar; Itot=on? V/Rtot : 0;
+    const Ih=Itot/2, Vpar=Itot*Rpar;
+    const mainIn =[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yMid},{x:xA,y:yMid},{x:jL,y:yMid}];
+    const top    =[{x:jL,y:yMid},{x:jL,y:yU},{x:cx,y:yU},{x:jR,y:yU},{x:jR,y:yMid}];
+    const bot    =[{x:jL,y:yMid},{x:jL,y:yD},{x:cx,y:yD},{x:jR,y:yD},{x:jR,y:yMid}];
+    const mainOut=[{x:jR,y:yMid},{x:xR,y:yMid},{x:xR,y:yB},{x:330,y:yB}];
+    paths=[{pts:mainIn,current:Itot},{pts:top,current:Ih},{pts:bot,current:Ih},{pts:mainOut,current:Itot}];
+    bulbs=[{x:xA,y:yMid,I:Itot,Vd:Itot*R1,P:Itot*Itot*R1,label:'豆電球①(直列)',n:'①'},
+           {x:cx,y:yU,  I:Ih,  Vd:Vpar,    P:Ih*Ih*R2,    label:'豆電球②(並列)',n:'②'},
+           {x:cx,y:yD,  I:Ih,  Vd:Vpar,    P:Ih*Ih*R2,    label:'豆電球③(並列)',n:'③'}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xL,y:(yMid+yB)/2,horiz:false};
+    fit={x:136,y:116,w:400,h:316};
+  }
+  else{ /* combo2 : ①の枝 ∥ ②③直列の枝（上下へ均等に枝分かれ） */
+    const xL=150,xR=510,yMid=246,yU=166,yD=326,yB=396,jL=240,jR=460,cxT=350;
+    const I1=on? V/R1 : 0;
+    const Rser=2*R2; const I2=on? V/Rser : 0;
+    Itot=I1+I2; Rtot=1/(1/R1+1/Rser);
+    const mainIn =[{x:330,y:yB},{x:xL,y:yB},{x:xL,y:yMid},{x:jL,y:yMid}];
+    const top    =[{x:jL,y:yMid},{x:jL,y:yU},{x:cxT,y:yU},{x:jR,y:yU},{x:jR,y:yMid}];
+    const bot    =[{x:jL,y:yMid},{x:jL,y:yD},{x:300,y:yD},{x:405,y:yD},{x:jR,y:yD},{x:jR,y:yMid}];
+    const mainOut=[{x:jR,y:yMid},{x:xR,y:yMid},{x:xR,y:yB},{x:330,y:yB}];
+    paths=[{pts:mainIn,current:Itot},{pts:top,current:I1},{pts:bot,current:I2},{pts:mainOut,current:Itot}];
+    bulbs=[{x:cxT,y:yU,I:I1,Vd:on?V:0,     P:V*I1,     label:'豆電球①(単独)',n:'①'},
+           {x:300,y:yD,I:I2,Vd:on?I2*R2:0, P:I2*I2*R2, label:'豆電球②(直列)',n:'②'},
+           {x:405,y:yD,I:I2,Vd:on?I2*R2:0, P:I2*I2*R2, label:'豆電球③(直列)',n:'③'}];
+    battery={x:330,y:yB,horiz:true}; sw={x:xL,y:(yMid+yB)/2,horiz:false};
+    fit={x:135,y:116,w:390,h:316};
   }
   if(phases.length!==paths.length) phases=new Array(paths.length).fill(0);
-  return {paths,bulbs,battery,sw,Itot,Rtot};
+  return {paths,bulbs,battery,sw,Itot,Rtot,fit};
 }
 
 /* ===== 幾何ヘルパ ===== */
@@ -307,7 +392,7 @@ function drawBattery(bt){
   ctx.strokeStyle='#cdd6f0';ctx.lineWidth=2.5;
   ctx.beginPath();ctx.moveTo(x-9,y-15);ctx.lineTo(x-9,y+15);ctx.stroke(); // 長(＋)
   ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(x+9,y-8);ctx.lineTo(x+9,y+8);ctx.stroke(); // 短(－)
-  ctx.fillStyle='#9aa6c4';ctx.font='13px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillStyle='#9aa6c4';ctx.font="13px 'JetBrains Mono','Zen Kaku Gothic New',sans-serif";ctx.textAlign='center';
   ctx.fillText('＋',x-9,y+30);ctx.fillText('－',x+9,y+30);
 }
 function drawSwitch(sw){
@@ -330,14 +415,22 @@ function loop(t){
   resizeIfNeeded();
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,cw,ch);
-  const s=Math.min(cw/VW,ch/VH);
-  ctx.save();ctx.translate((cw-VW*s)/2,(ch-VH*s)/2);ctx.scale(s,s);
-
   const c=build();
+  const FIT=c.fit;   // モードごとに「中身が収まる範囲」を切り替える
+  const ctrls=document.querySelector('.controls');
+  const reserve=(ctrls?ctrls.getBoundingClientRect().height:54)+18;
+  const availH=Math.max(150, ch-reserve);
+  const s=Math.min(cw/FIT.w, availH/FIT.h);
+  ctx.save();ctx.translate((cw-FIT.w*s)/2 - FIT.x*s,(availH-FIT.h*s)/2 - FIT.y*s);ctx.scale(s,s);
+
   c.paths.forEach((p,i)=>{p._i=i; phases[i]=(phases[i]+p.current*1.8*dt)%1;});
   c.paths.forEach(p=>drawWire(p.pts));
   c.paths.forEach(drawDots);
   c.bulbs.forEach(drawBulb);
+  c.bulbs.forEach(b=>{ if(b.n){
+    ctx.save(); ctx.font="700 14px 'Zen Kaku Gothic New','JetBrains Mono',sans-serif"; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#9ff0fb'; ctx.fillText(b.n, b.x, b.y-23); ctx.restore();
+  }});
   drawBattery(c.battery);
   drawSwitch(c.sw);
 
@@ -382,7 +475,7 @@ function renderPanel(){
 }
 function fmtA(x){return x.toFixed(2);}
 function meterHTML(c){
-  const modeName={single:'基本回路',series:'直列回路',parallel:'並列回路'}[mode];
+  const modeName={single:'基本回路',series:'直列回路',parallel:'並列回路',combo1:'複合①（①直列＋②③並列）',combo2:'複合②（①単独 ∥ ②③直列）'}[mode];
   let bulbsHTML='';
   c.bulbs.forEach((b,i)=>{
     const br=Math.max(0,Math.min(1,b.P/1.5));
@@ -403,7 +496,9 @@ function exHTML(){
   let body;
   if(mode==='single')body=common+`<h3>基本回路</h3><div class="pt">電圧を2倍にすると電流も2倍。</div><div class="pt">抵抗を2倍にすると電流は半分。</div><div class="pt">電流は回路のどこでも同じ大きさ。</div>`;
   else if(mode==='series')body=common+`<h3>直列回路のポイント</h3><div class="pt">電流はどこも<b>同じ</b>大きさ。</div><div class="pt">電圧は各豆電球に<b>分かれる</b>（足すと電池の電圧）。</div><div class="pt">合成抵抗は和（R＝R₁＋R₂）で<b>大きく</b>なるため、電流は流れにくく、豆電球は1個のときより<b>暗い</b>。</div>`;
-  else body=common+`<h3>並列回路のポイント</h3><div class="pt">各豆電球にかかる電圧は<b>同じ</b>（電池の電圧と等しい）。</div><div class="pt">電流は枝分かれして<b>分かれる</b>（足すと全体の電流）。</div><div class="pt">合成抵抗は各抵抗より<b>小さく</b>なり、全体の電流は<b>増える</b>。各豆電球は1個のときと同じ明るさ。</div>`;
+  else if(mode==='parallel')body=common+`<h3>並列回路のポイント</h3><div class="pt">各豆電球にかかる電圧は<b>同じ</b>（電池の電圧と等しい）。</div><div class="pt">電流は枝分かれして<b>分かれる</b>（足すと全体の電流）。</div><div class="pt">合成抵抗は各抵抗より<b>小さく</b>なり、全体の電流は<b>増える</b>。各豆電球は1個のときと同じ明るさ。</div>`;
+  else if(mode==='combo1')body=common+`<h3>複合①：①が直列、②③が並列</h3><div class="pt">①には<b>全体の電流</b>がそのまま流れる（だから一番明るい）。</div><div class="pt">①を通った電流が②と③に<b>半分ずつ</b>分かれる（②③は同じ明るさで、①より暗い）。</div><div class="pt">合成抵抗は <b>R₁ ＋ R₂/2</b>（②③は同じ抵抗R₂で計算）。電池の電圧は「①にかかる分」と「並列部にかかる分」に分かれる。</div>`;
+  else body=common+`<h3>複合②：①の枝と、②③直列の枝が並列</h3><div class="pt">①の枝にも②③の枝にも、<b>電池と同じ電圧</b>がかかる。</div><div class="pt">①は単独なので<b>明るい</b>。②③は直列で電圧を半分ずつに分けるので<b>暗い</b>（②と③は同じ明るさ）。</div><div class="pt">合成抵抗は <b>1 ÷ ( 1/R₁ ＋ 1/(2R₂) )</b>。全体の電流＝①の枝＋②③の枝。</div>`;
   return `<div class="ex">${body}</div>`;
 }
 
@@ -417,6 +512,8 @@ const QBANK=[
  {q:'抵抗を2倍にすると（電圧そのまま）、電流は？',o:['2倍','半分','変わらない'],a:1,e:'I＝V÷R。抵抗2倍で電流は半分です。'},
  {q:'直列の合成抵抗は、もとの抵抗1個より？',o:['大きくなる','小さくなる','同じ'],a:0,e:'直列は R＝R₁＋R₂ で大きくなります。'},
  {q:'並列の合成抵抗は、もとの抵抗1個より？',o:['大きくなる','小さくなる','同じ'],a:1,e:'並列は道が増えるぶん、合成抵抗は小さくなります。'},
+ {q:'①を直列につなぎ、その先に②③を並列にした回路。一番明るい豆電球は？',o:['①','②と③','全部同じ'],a:0,e:'①には全体の電流がそのまま流れ、②③はそれを半分ずつに分けるので、①が一番明るい。'},
+ {q:'①の枝と、②③を直列にした枝を並列につないだ回路。②③の明るさは①と比べて？',o:['明るい','暗い','同じ'],a:1,e:'①には電池の電圧がそのままかかるが、②③は直列で電圧を半分ずつに分けるので、②③は①より暗い。'},
 ];
 let quiz=null;
 function newQuiz(){return {active:true,order:[...Array(QBANK.length).keys()].sort(()=>Math.random()-0.5).slice(0,6),idx:0,score:0,answered:null};}
@@ -469,6 +566,41 @@ function updateMeter(c){
 
 /* ===== 起動 ===== */
 resize();renderPanel();requestAnimationFrame(loop);
+</script>
+
+<div class="rotate-tip" id="manabiRotate">
+  <div class="rt-ic">📱</div>
+  <div class="rt-msg">横向きにすると<br>見やすくなります</div>
+  <div class="rt-sub">スマホを横に回してください</div>
+  <button class="rt-x" id="manabiRotateX">このまま縦で使う</button>
+</div>
+<script>
+(function(){
+  "use strict";
+  var doc=document;
+  /* 1) canvasのサイズを常に親要素に合わせ続ける
+        （スマホのアドレスバー出入り・画面回転で高さが変わっても崩れないように） */
+  var cv=doc.getElementById('cv');
+  if(cv && cv.parentElement && typeof resize==='function'){
+    var lw=-1, lh=-1;
+    var tick=function(){
+      var r=cv.parentElement.getBoundingClientRect();
+      var w=Math.round(r.width), h=Math.round(r.height);
+      if(w>0 && h>0 && (w!==lw || h!==lh)){ lw=w; lh=h; try{ resize(); }catch(e){} }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  /* 2) 操作を始めたら左上のヒントをそっと消す（小さい画面で邪魔にならないように） */
+  var hint=doc.querySelector('.hint');
+  var stage=doc.querySelector('.stage');
+  if(hint && stage){
+    stage.addEventListener('pointerdown', function(){ hint.classList.add('is-hidden'); }, {once:true});
+  }
+  /* 3) 縦向き案内を閉じる */
+  var rx=doc.getElementById('manabiRotateX'), rt=doc.getElementById('manabiRotate');
+  if(rx && rt){ rx.addEventListener('click', function(){ rt.classList.add('is-hidden'); }); }
+})();
 </script>
 </body>
 </html>
