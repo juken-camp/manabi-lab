@@ -279,14 +279,14 @@ const state={ on:false, view:'macro', showE:true, showIon:true, blue:1.0 };
 
 /* ---------- 配置（仮想座標） ---------- */
 const surfY=235, botY=398;                 // 液面・底
-const beakerL=150, beakerR=490;            // ビーカー左右
+const beakerL=70, beakerR=570;             // ビーカー左右（横に広げて大きく見せる）
 const divX=320;                            // 素焼き板
-const znX=232, cuX=408;                    // 電極の中心x
+const znX=196, cuX=444;                    // 電極の中心x（左右に離す）
 const plateTop=196, plateBot=380;          // 電極の上端・下端
 /* 導線の経路（電子はこの上を 亜鉛→銅 へ流れる） */
 const WIRE=[ {x:znX,y:plateTop}, {x:znX,y:108}, {x:cuX,y:108}, {x:cuX,y:plateTop} ];
-const SW={x:286,y:108,w:30,h:24};          // スイッチ位置
-const BULB={x:362,y:108,r:13};             // 豆電球
+const SW={x:262,y:108,w:30,h:24};          // スイッチ位置
+const BULB={x:350,y:108,r:13};             // 豆電球
 
 /* 導線の累積長 */
 let wireLen=[], wireTotal=0;
@@ -307,10 +307,10 @@ function rand(a,b){ return a+Math.random()*(b-a); }
 function initIons(){
   ions=[];
   // 左：ZnSO4（Zn²⁺ と SO4²⁻）／右：CuSO4（Cu²⁺ と SO4²⁻）
-  for(let i=0;i<7;i++) ions.push({t:'znIon',x:rand(beakerL+18,divX-16),y:rand(surfY+16,botY-14)});
-  for(let i=0;i<6;i++) ions.push({t:'so4', x:rand(beakerL+18,divX-16),y:rand(surfY+16,botY-14)});
-  for(let i=0;i<8;i++) ions.push({t:'cuIon',x:rand(divX+16,beakerR-18),y:rand(surfY+16,botY-14)});
-  for(let i=0;i<6;i++) ions.push({t:'so4', x:rand(divX+16,beakerR-18),y:rand(surfY+16,botY-14)});
+  for(let i=0;i<6;i++) ions.push({t:'znIon',x:rand(beakerL+22,divX-18),y:rand(surfY+18,botY-26)});
+  for(let i=0;i<5;i++) ions.push({t:'so4', x:rand(beakerL+22,divX-18),y:rand(surfY+18,botY-26)});
+  for(let i=0;i<6;i++) ions.push({t:'cuIon',x:rand(divX+18,beakerR-22),y:rand(surfY+18,botY-26)});
+  for(let i=0;i<5;i++) ions.push({t:'so4', x:rand(divX+18,beakerR-22),y:rand(surfY+18,botY-26)});
   for(const io of ions){ io.vx=rand(-6,6); io.vy=rand(-5,5); io.ph=rand(0,TAU); }
 }
 initIons();
@@ -319,7 +319,7 @@ function stepIons(dt){
   for(const io of ions){
     const left = io.x < divX;
     // 陽イオン→＋極(右,銅)側へ、陰イオン→−極(左,亜鉛)側へ ゆるやかにドリフト
-    const bias = (io.t==='so4') ? -7 : 7;
+    const bias = (io.t==='so4') ? -3.4 : 3.4;
     io.vx += bias*dt*0.8 + rand(-8,8)*dt;
     io.vy += rand(-8,8)*dt;
     io.vx*=0.96; io.vy*=0.96;
@@ -367,6 +367,28 @@ function arrow(x1,y1,x2,y2,col){
   ctx.lineTo(x2-9*Math.cos(a+0.4),y2-9*Math.sin(a+0.4)); ctx.closePath(); ctx.fill(); ctx.restore();
 }
 
+/* イオンの色・符号の凡例（小さく隅に。ラベルを各イオンに付けない代わり） */
+function ionLegend(){
+  const lx=16, ly=64, gap=20, w=150, h=gap*2+30;
+  ctx.save();
+  ctx.fillStyle='rgba(6,9,18,0.5)';
+  ctx.beginPath();
+  const x0=lx-9,y0=ly-14,r=8;
+  ctx.moveTo(x0+r,y0); ctx.arcTo(x0+w,y0,x0+w,y0+h,r); ctx.arcTo(x0+w,y0+h,x0,y0+h,r);
+  ctx.arcTo(x0,y0+h,x0,y0,r); ctx.arcTo(x0,y0,x0+w,y0,r); ctx.closePath();
+  ctx.fill(); ctx.strokeStyle='rgba(120,150,210,.18)'; ctx.lineWidth=1; ctx.stroke();
+  const items=[[COL.znIon,'＋','Zn²⁺'],[COL.cuIon,'＋','Cu²⁺'],[COL.so4,'－','SO₄²⁻']];
+  items.forEach((it,i)=>{
+    const y=ly+i*gap;
+    ctx.fillStyle=it[0]; ctx.beginPath(); ctx.arc(lx,y,6,0,TAU); ctx.fill();
+    ctx.fillStyle='rgba(10,12,20,.85)'; ctx.font="700 8px 'JetBrains Mono'";
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(it[1],lx,y);
+    ctx.fillStyle='#c8d0e4'; ctx.font="600 11px 'JetBrains Mono'";
+    ctx.textAlign='left'; ctx.fillText(it[2],lx+13,y);
+  });
+  ctx.restore();
+}
+
 /* ============================================================
    全体ビュー
    ============================================================ */
@@ -395,13 +417,14 @@ function drawMacro(){
   ctx.beginPath(); ctx.moveTo(divX,surfY-4); ctx.lineTo(divX,botY); ctx.stroke(); ctx.restore();
   txt('素焼き板', divX, surfY-14, '9px', 'rgba(190,195,210,.75)');
 
-  /* イオン */
+  /* イオン（ラベルは付けず色＋符号で表す。重なって読めなくなるのを防ぐ） */
   if(state.showIon){
     for(const io of ions){
-      if(io.t==='znIon') ionDot(io.x,io.y,COL.znIon,'＋','Zn²⁺');
-      else if(io.t==='cuIon') ionDot(io.x,io.y,COL.cuIon,'＋','Cu²⁺');
-      else ionDot(io.x,io.y,COL.so4,'－','SO₄²⁻');
+      if(io.t==='znIon') ionDot(io.x,io.y,COL.znIon,'＋');
+      else if(io.t==='cuIon') ionDot(io.x,io.y,COL.cuIon,'＋');
+      else ionDot(io.x,io.y,COL.so4,'－');
     }
+    ionLegend();
   }
 
   /* 電極 */
@@ -665,13 +688,21 @@ startQuiz();
 /* ============================================================
    リサイズ＆ループ
    ============================================================ */
+/* 描画の設計キャンバスは VW×VH。ただし上下左右に余白があるので、
+   実際に中身がある範囲(下のFIT)だけを画面にフィットさせて大きく見せる */
+const FIT={x:4, y:46, w:576, h:374};   // 中身のある範囲（電池の絵＋凡例＋ラベル）
 function resize(){
   const st=cv.parentElement.getBoundingClientRect();
   DPR=Math.min(window.devicePixelRatio||1,2);
   cv.width=st.width*DPR; cv.height=st.height*DPR;
   cv.style.width=st.width+'px'; cv.style.height=st.height+'px';
-  scale=Math.min(st.width/VW, st.height/VH);
-  ox=(st.width-VW*scale)/2; oy=(st.height-VH*scale)/2;
+  // 下の操作バーのぶんを空ける
+  const ctrls=document.querySelector('.controls');
+  const reserve=(ctrls?ctrls.getBoundingClientRect().height:54)+18;
+  const availH=Math.max(150, st.height-reserve);
+  scale=Math.min(st.width/FIT.w, availH/FIT.h);
+  ox=(st.width-FIT.w*scale)/2 - FIT.x*scale;
+  oy=(availH-FIT.h*scale)/2 - FIT.y*scale;
 }
 window.addEventListener('resize',resize);
 
