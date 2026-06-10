@@ -81,7 +81,7 @@
   .btn:hover{background:rgba(255,255,255,.09)}
   .btn.primary{background:linear-gradient(var(--amber),#e0911a);color:#1a1206;border:0;box-shadow:0 0 14px rgba(245,166,35,.3)}
 
-  .legend{position:absolute;left:14px;bottom:84px;display:none;flex-direction:column;gap:6px;font-size:11px;color:var(--dim);background:var(--panel);border:1px solid var(--panel-line);border-radius:10px;padding:9px 11px;backdrop-filter:blur(10px);max-width:240px;line-height:1.5}
+  .legend{position:absolute;right:14px;bottom:14px;display:none;flex-direction:column;gap:6px;font-size:11px;color:var(--dim);background:var(--panel);border:1px solid var(--panel-line);border-radius:10px;padding:9px 11px;backdrop-filter:blur(10px);max-width:240px;line-height:1.5}
   .legend.show{display:flex}
   .legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:7px;vertical-align:middle}
 
@@ -145,23 +145,43 @@
     .controls{bottom:12px;padding:10px 12px;gap:10px}
     .sl input[type=range]{width:80px}
     .hint{font-size:10px;max-width:200px}
-    .legend{bottom:78px}
+    .legend{bottom:12px}
   }
 </style>
 
 <style id="manabi-responsive">
-/* ===== まなびラボ 表示強化（横画面・スマホ対応 / 自動追加） ===== */
+/* ===== まなびラボ 表示強化（操作パネルを左サイドに縦配置 / 自動追加） ===== */
 .hint{transition:opacity .4s ease}
 .hint.is-hidden{opacity:0;pointer-events:none}
 
-/* 横向きスマホなど「高さが低い画面」でも右パネルを引き出し式にして、
-   シミュ本体に画面を最大限ゆずる（幅820px版だけでは横向きスマホを拾えないため） */
+/* 操作パネルを左サイドに縦並びで配置（中央のシミュレーションを隠さない） */
+.controls{
+  left:14px !important; right:auto !important; bottom:auto !important; top:50% !important;
+  transform:translateY(-50%) !important;
+  flex-direction:column !important; align-items:stretch !important; flex-wrap:nowrap !important;
+  gap:9px !important; width:min(214px,46vw) !important; max-width:214px !important;
+  max-height:calc(100% - 18px) !important; overflow-y:auto !important; overflow-x:hidden !important;
+  padding:12px !important;
+}
+.controls > button{width:100% !important; justify-content:center !important; white-space:nowrap !important}
+.controls .sl{width:100% !important; display:flex !important; align-items:center !important; gap:7px !important}
+.controls .sl label{flex:0 0 auto !important; white-space:nowrap !important}
+.controls .sl input[type=range]{flex:1 1 auto !important; width:auto !important; min-width:0 !important}
+.controls .sl b{flex:0 0 auto !important; white-space:nowrap !important; text-align:right !important}
+.controls .seg{width:100% !important; display:flex !important}
+.controls .seg button{flex:1 1 0 !important; padding:6px 4px !important; text-align:center !important}
+.controls .toggle{width:100% !important; display:flex !important; align-items:center !important; justify-content:space-between !important}
+
+/* 使い方ヒントは下中央へ（左の操作パネルと重ならないように） */
+.hint{left:50% !important; right:auto !important; top:auto !important; bottom:12px !important;
+  transform:translateX(-50%) !important; max-width:80vw !important; text-align:center !important}
+
+/* 横向きスマホなど高さが低い画面でも、右パネル(データ)は引き出し式に */
 @media (max-height:520px) and (max-width:1100px){
   main{grid-template-columns:1fr !important}
   aside{position:fixed !important;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
     transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
-    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);
-    border-left:1px solid var(--panel-line)}
+    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);border-left:1px solid var(--panel-line)}
   aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
   .panel-toggle{display:flex !important;position:absolute;top:10px;right:12px;z-index:20;
     align-items:center;gap:6px;border:1px solid var(--panel-line);background:var(--panel);
@@ -170,16 +190,11 @@
   .panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
     background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;
     border-radius:9px;font-size:17px;cursor:pointer}
-  .hint{top:10px !important;left:10px !important;bottom:auto !important;right:auto !important;
-    font-size:10px !important;max-width:52vw;line-height:1.6}
-  .controls{bottom:8px !important;gap:8px 11px !important;padding:8px 11px !important;max-width:96% !important}
-  .controls .sl input[type=range]{width:104px !important}
-  .controls .sl label{font-size:11px !important}
-  .controls .sl b{min-width:46px !important}
-  .controls .seg button{padding:6px 10px !important}
+  .controls{width:min(196px,52vw) !important;max-width:196px !important;
+    max-height:calc(100% - 14px) !important;padding:10px !important;gap:7px !important}
 }
 
-/* 縦向きスマホ：横向きをやさしく案内（閉じれば縦のままでも使える） */
+/* 縦向きスマホ：横向きをやさしく案内 */
 .rotate-tip{display:none}
 @media (max-width:820px) and (orientation:portrait){
   .rotate-tip{display:flex;position:fixed;inset:0;z-index:90;flex-direction:column;
@@ -295,7 +310,15 @@ scene.add(sunLight);
 })();
 
 // 太陽
-const sun=new THREE.Mesh(new THREE.SphereGeometry(SUNR,40,40),new THREE.MeshBasicMaterial({color:0xffd86b}));
+function sunTexture(){
+  const c=document.createElement('canvas');c.width=256;c.height=128;const x=c.getContext('2d');
+  x.fillStyle='#ffce62';x.fillRect(0,0,256,128);
+  let seed=99;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  for(let k=0;k<260;k++){x.globalAlpha=0.10;x.fillStyle=k%2?'#ffb23e':'#fff2bf';
+    x.beginPath();x.arc(rnd()*256,rnd()*128,2+rnd()*7,0,Math.PI*2);x.fill();}
+  x.globalAlpha=1;return new THREE.CanvasTexture(c);
+}
+const sun=new THREE.Mesh(new THREE.SphereGeometry(SUNR,40,40),new THREE.MeshBasicMaterial({map:sunTexture(),color:0xffe9a8}));
 scene.add(sun);
 const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:makeGlow(),color:0xffc24d,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
 glow.scale.set(46,46,1); scene.add(glow);
@@ -303,14 +326,89 @@ function makeGlow(){const c=document.createElement('canvas');c.width=c.height=12
   const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,220,140,1)');g.addColorStop(.3,'rgba(245,166,35,.6)');g.addColorStop(1,'rgba(245,166,35,0)');
   x.fillStyle=g;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);}
 
+/* ===== 惑星の手続きテクスチャ（初回のみ生成・軽量） ===== */
+function shadeHex(hex,f){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  const t=f<0?0:255, a=Math.abs(f);
+  r=Math.round(r+(t-r)*a); g=Math.round(g+(t-g)*a); b=Math.round(b+(t-b)*a);
+  return 'rgb('+r+','+g+','+b+')';
+}
+function planetTexture(i,p){
+  const W=256,H=128,c=document.createElement('canvas');c.width=W;c.height=H;
+  const x=c.getContext('2d');
+  let seed=20+i*7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  x.fillStyle=p.color; x.fillRect(0,0,W,H);
+  if(i===4||i===5){            // 木星・土星：縞模様
+    const n=i===4?9:7;
+    for(let k=0;k<n;k++){
+      x.globalAlpha=i===4?0.8:0.5;
+      x.fillStyle=k%2?shadeHex(p.color,-0.18):shadeHex(p.color,0.16);
+      x.fillRect(0,k*H/n,W,H/n+1);
+    }
+    x.globalAlpha=0.12;x.fillStyle='#ffffff';
+    for(let k=0;k<14;k++){x.fillRect(0,rnd()*H,W,1.4);}
+    x.globalAlpha=1;
+    if(i===4){                 // 大赤斑
+      x.fillStyle='#c4593a';x.beginPath();x.ellipse(W*0.68,H*0.62,16,9,0,0,Math.PI*2);x.fill();
+      x.fillStyle='rgba(255,212,184,0.5)';x.beginPath();x.ellipse(W*0.68,H*0.62,9,5,0,0,Math.PI*2);x.fill();
+    }
+  }else if(i===6||i===7){      // 天王星・海王星：なめらか＋淡い帯
+    for(let k=0;k<5;k++){
+      x.globalAlpha=0.45;
+      x.fillStyle=k%2?shadeHex(p.color,-0.08):shadeHex(p.color,0.08);
+      x.fillRect(0,k*H/5,W,H/5+1);
+    }
+    x.globalAlpha=1;
+    if(i===7){x.fillStyle='rgba(20,40,120,0.5)';x.beginPath();x.ellipse(W*0.4,H*0.42,12,7,0,0,Math.PI*2);x.fill();}
+  }else if(i===2){             // 地球：海・大陸・雲・極
+    x.fillStyle='#2f6fb4';x.fillRect(0,0,W,H);
+    x.fillStyle='#3f9d63';
+    for(let k=0;k<10;k++){
+      const cx=rnd()*W, cy=H*0.18+rnd()*H*0.64, rw=14+rnd()*30, rh=8+rnd()*14, rot=rnd()*3;
+      x.beginPath();x.ellipse(cx,cy,rw,rh,rot,0,Math.PI*2);x.fill();
+      if(cx<rw){x.beginPath();x.ellipse(cx+W,cy,rw,rh,rot,0,Math.PI*2);x.fill();}
+      if(cx>W-rw){x.beginPath();x.ellipse(cx-W,cy,rw,rh,rot,0,Math.PI*2);x.fill();}
+    }
+    x.fillStyle='rgba(255,255,255,0.85)';x.fillRect(0,0,W,7);x.fillRect(0,H-7,W,7);
+    x.globalAlpha=0.32;x.fillStyle='#ffffff';
+    for(let k=0;k<16;k++){x.beginPath();x.ellipse(rnd()*W,rnd()*H,16+rnd()*22,3+rnd()*4,0,0,Math.PI*2);x.fill();}
+    x.globalAlpha=1;
+  }else if(i===3){             // 火星：さび＋暗い地形＋極冠
+    for(let k=0;k<26;k++){
+      x.globalAlpha=0.16;x.fillStyle=k%2?'#8c4326':'#e09a6a';
+      x.beginPath();x.ellipse(rnd()*W,rnd()*H,10+rnd()*26,6+rnd()*12,rnd()*3,0,Math.PI*2);x.fill();
+    }
+    x.globalAlpha=1;x.fillStyle='rgba(255,255,255,0.9)';x.fillRect(0,0,W,6);x.fillRect(0,H-5,W,5);
+  }else if(i===0){             // 水星：クレーター
+    for(let k=0;k<40;k++){
+      x.globalAlpha=0.18;x.fillStyle=k%2?'#7c6f60':'#d8ccba';
+      x.beginPath();x.arc(rnd()*W,rnd()*H,1.5+rnd()*5,0,Math.PI*2);x.fill();
+    }
+    x.globalAlpha=1;
+  }else{                       // 金星：クリーム色の雲のうず
+    for(let k=0;k<8;k++){
+      x.globalAlpha=0.14;x.fillStyle=k%2?'#c89a55':'#f7dfae';
+      x.beginPath();x.ellipse(W/2,H/2,W*0.55,6+k*7,0,0,Math.PI*2);x.fill();
+    }
+    x.globalAlpha=1;
+  }
+  return new THREE.CanvasTexture(c);
+}
+
 // 惑星 + 軌道
 const planetObjs=[];
 PLANETS.forEach((p,i)=>{
   const pr=1.0+Math.log10(p.diameter/3000+1)*1.6;
   const grp=new THREE.Group(); grp.rotation.z=p.tilt;
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(pr,32,32),
-    new THREE.MeshStandardMaterial({color:p.color,roughness:.85,metalness:.05}));
+    new THREE.MeshStandardMaterial({map:planetTexture(i,p),roughness:.85,metalness:.05}));
   mesh.userData.i=i; grp.add(mesh);
+  if(i===2){ // 地球の大気（うすい青のシェル・選択判定には含めない）
+    const atm=new THREE.Mesh(new THREE.SphereGeometry(pr*1.08,32,32),
+      new THREE.MeshBasicMaterial({color:0x6ea8ff,transparent:true,opacity:0.16,side:THREE.BackSide,depthWrite:false}));
+    grp.add(atm);
+  }
   if(p.ring){
     const ring=new THREE.Mesh(new THREE.RingGeometry(pr*1.5,pr*2.4,48),
       new THREE.MeshBasicMaterial({color:0xe3c98a,side:THREE.DoubleSide,transparent:true,opacity:.75}));
