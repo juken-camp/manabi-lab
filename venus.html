@@ -226,6 +226,7 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);
 <body>
 
 <header>
+  <a class="navback" href="./index.html" aria-label="まなびラボのトップへ戻る"><span class="nb-arrow">←</span><span class="nb-label">まなびラボ</span></a>
   <div class="accent"></div>
   <div>
     <h1>金星の満ち欠け</h1>
@@ -237,8 +238,13 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);
 <main>
   <div class="stage">
     <canvas id="cv"></canvas>
-    <div class="hint">1本指ドラッグ＝<b>金星をつかんで動かす</b><br>位置をタップ＝<b>その位置へジャンプ</b></div>
-    <button class="panel-toggle" id="ptog">☰ データ</button>
+    <div class="hint">1本指ドラッグ＝<b>金星をつかんで動かす</b><br>位置をタップ＝<b>その位置へジャンプ</b><br>あいた所をドラッグ＝<b>図を動かす</b>／ピンチ・ホイール＝<b>ズーム</b><br>ダブルタップ＝<b>表示をもとに戻す</b></div>
+    <button class="panel-toggle" id="ptog">📊 データ</button>
+    <div class="zoomctl" id="zoomCtl">
+      <button type="button" data-zz="in" aria-label="拡大">＋</button>
+      <button type="button" data-zz="out" aria-label="縮小">−</button>
+      <button type="button" data-zz="reset" aria-label="表示をもとに戻す">⟲</button>
+    </div>
 
     <div class="controls">
       <div class="seg" id="animSeg">
@@ -260,7 +266,6 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);
     <div class="tabbar">
       <button class="on" data-tab="data">金星データ</button>
       <button data-tab="explain">解説</button>
-      <button data-tab="quiz">クイズ</button>
     </div>
     <div class="panelbody">
 
@@ -289,10 +294,6 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);
         <div class="note">確かめ方：公転をONにして、上の図で金星が<b>地球に近づくほど大きく・細く</b>、<b>遠ざかるほど小さく・丸く</b>なることに注目。右の望遠鏡像と見比べよう。</div>
       </div>
 
-      <div class="tabpane" id="tab-quiz">
-        <div id="quizArea"></div>
-      </div>
-
     </div>
   </aside>
 </main>
@@ -310,6 +311,7 @@ const ctx=cv.getContext('2d');
 
 const VW=640, VH=460;
 let scale=1, ox=0, oy=0, DPR=1;
+var VIEW={z:1,x:0,y:0};   /* 図のパン＆ズーム（manabi v2） */
 
 /* シーン配置（仮想座標）：太陽中心・地球は下に固定 */
 const SUN={x:250,y:222};
@@ -663,53 +665,9 @@ document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click
   document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); $('tab-'+b.dataset.tab).classList.add('on'); }));
 
-$('ptog').addEventListener('click',()=>$('aside').classList.add('open'));
+$('ptog').addEventListener('click',()=>$('aside').classList.toggle('open'));
 $('pclose').addEventListener('click',()=>$('aside').classList.remove('open'));
 
-/* ============================================================
-   クイズ
-   ============================================================ */
-const QBANK=[
-  {q:'金星が月のように満ち欠けして見えるのはなぜ？',o:['地球より内側を公転する内惑星だから','金星が自分で光るから','地球の影が映るから'],a:0,e:'金星は地球より内側を回る内惑星。太陽の光を反射し、見る角度で満ち欠けする。'},
-  {q:'金星が最も大きく見えるのはどんなとき？',o:['外合に近いとき','内合に近いとき','満月状のとき'],a:1,e:'内合に近い＝地球に最も近い＝大きく見える。ただし形は細い三日月状。'},
-  {q:'金星が丸い形（満月状）に見えるのはどんなとき？',o:['外合付近','内合付近','最大離角'],a:0,e:'外合付近では太陽の向こう側で丸く見える。でも遠いので小さい。'},
-  {q:'真夜中に金星が見えないのはなぜ？',o:['明るすぎるから','太陽から大きく離れないから','自転が速いから'],a:1,e:'内惑星なので太陽から最大でも約46°しか離れない。だから真夜中の空には来ない。'},
-  {q:'夕方の西の空に見える金星の呼び名は？',o:['宵の明星','明けの明星','流れ星'],a:0,e:'夕方の西＝宵の明星。明け方の東＝明けの明星。同じ金星の別の時期。'},
-  {q:'金星の満ち欠けを観察し、地動説の証拠とした人物は？',o:['ニュートン','ガリレオ','コペルニクス'],a:1,e:'ガリレオが望遠鏡で金星の満ち欠けを確認し、太陽中心の動きの証拠とした。'},
-  {q:'内惑星の組み合わせはどれ？',o:['火星と木星','水星と金星','土星と天王星'],a:1,e:'地球より内側を回るのは水星と金星。これらだけが満ち欠けと大きさの変化を見せる。'},
-  {q:'最大離角のとき、金星はどんな形に見える？',o:['まん丸','半月のような形','見えない'],a:1,e:'最大離角では太陽-金星-地球がほぼ直角になり、半分が光る半月状に見える。'},
-];
-let quiz={list:[],i:0,score:0,answered:false};
-function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
-function startQuiz(){ quiz={list:shuffle(QBANK).slice(0,6),i:0,score:0,answered:false}; renderQ(); }
-function renderQ(){
-  const area=$('quizArea');
-  if(quiz.i>=quiz.list.length){
-    const m=quiz.score===6?'パーフェクト！✨':quiz.score>=4?'いい感じ！':'もう一度チャレンジ！';
-    area.innerHTML=`<div class="quiz-result"><div class="score">${quiz.score}/6</div>
-      <div class="lab">${m}</div><button class="btn primary" id="qRetry">もう一度</button></div>`;
-    $('qRetry').addEventListener('click',startQuiz); return;
-  }
-  const it=quiz.list[quiz.i]; quiz.answered=false;
-  area.innerHTML=`<div class="quiz-prog">Q ${quiz.i+1} / 6 ・ SCORE ${quiz.score}</div>
-    <div class="quiz-q">${it.q}</div><div id="qOpts"></div>
-    <div class="quiz-fb" id="qFb"></div>
-    <button class="btn primary" id="qNext" style="display:none">${quiz.i===5?'結果を見る':'次の問題 →'}</button>`;
-  const opts=$('qOpts');
-  it.o.forEach((o,idx)=>{ const b=document.createElement('button');
-    b.className='quiz-opt'; b.textContent=o; b.addEventListener('click',()=>answer(idx,b)); opts.appendChild(b); });
-}
-function answer(idx,btn){
-  if(quiz.answered)return; quiz.answered=true;
-  const it=quiz.list[quiz.i];
-  [...$('qOpts').children].forEach((b,i)=>{ b.disabled=true; if(i===it.a)b.classList.add('ok'); });
-  const fb=$('qFb');
-  if(idx===it.a){ quiz.score++; fb.className='quiz-fb show ok'; fb.innerHTML=`<span class="lab">正解</span>${it.e}`; }
-  else{ btn.classList.add('ng'); fb.className='quiz-fb show ng'; fb.innerHTML=`<span class="lab">おしい</span>${it.e}`; }
-  const nx=$('qNext'); nx.style.display='block';
-  nx.addEventListener('click',()=>{ quiz.i++; renderQ(); },{once:true});
-}
-startQuiz();
 
 /* ============================================================
    リサイズ＆ループ
@@ -726,6 +684,10 @@ function resize(){
   scale=Math.min(availW/FIT.w, st.height/FIT.h);
   ox=reserveW+(availW-FIT.w*scale)/2 - FIT.x*scale;
   oy=(st.height-FIT.h*scale)/2 - FIT.y*scale;
+  /* ユーザーのパン＆ズームを上乗せ */
+  ox=VIEW.z*(ox-st.width/2)+st.width/2+VIEW.x;
+  oy=VIEW.z*(oy-st.height/2)+st.height/2+VIEW.y;
+  scale*=VIEW.z;
 }
 window.addEventListener('resize',resize);
 
@@ -776,6 +738,171 @@ requestAnimationFrame(loop);
   /* 3) 縦向き案内を閉じる */
   var rx=doc.getElementById('manabiRotateX'), rt=doc.getElementById('manabiRotate');
   if(rx && rt){ rx.addEventListener('click', function(){ rt.classList.add('is-hidden'); }); }
+})();
+</script>
+
+<style id="manabi-v2">
+/* ===== まなびラボ v2 ===== */
+/* トップへ戻る */
+.navback{display:inline-flex;align-items:center;gap:7px;flex:none;border:1px solid var(--panel-line);
+  background:rgba(255,255,255,.04);color:var(--text);text-decoration:none;font-size:12.5px;font-weight:600;
+  padding:7px 12px;border-radius:11px;transition:.15s;white-space:nowrap}
+.navback:hover{background:rgba(255,255,255,.10)}
+.navback .nb-arrow{font-family:var(--mono);color:var(--dim)}
+@media(max-width:620px){.navback .nb-label{display:none}.navback{padding:7px 10px}}
+
+/* データパネルは常に引き出し式（図を最大化） */
+main{grid-template-columns:1fr !important}
+aside{position:fixed !important;top:0;right:0;width:min(340px,88vw);height:100%;z-index:40;
+  transform:translateX(102%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+  background:rgba(8,11,20,.97);backdrop-filter:blur(12px);border-left:1px solid var(--panel-line)}
+aside.open{transform:none !important;box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+.panel-toggle{display:flex !important;position:absolute;top:12px;right:14px;z-index:20;align-items:center;gap:6px;
+  border:1px solid var(--panel-line);background:var(--panel,rgba(14,18,32,.85));color:var(--text);
+  font-family:var(--jp);font-size:12px;font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;
+  backdrop-filter:blur(8px)}
+.panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
+  background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;border-radius:9px;
+  font-size:17px;cursor:pointer}
+
+/* 操作パネルの折りたたみ */
+.ctl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;
+  background:transparent;color:var(--dim);font-family:var(--jp);font-size:11.5px;font-weight:700;
+  letter-spacing:.12em;cursor:pointer;padding:1px 2px 2px}
+.ctl-head .ch-ico{transition:transform .2s;font-size:10px}
+.controls.min{width:auto !important;min-width:0 !important;max-width:none !important;padding:9px 13px !important}
+.controls.min > *:not(.ctl-head){display:none !important}
+.controls.min .ctl-head{padding:0;letter-spacing:.1em}
+.controls.min .ch-ico{transform:rotate(-90deg)}
+
+/* ズーム操作 */
+.zoomctl{position:absolute;right:14px;bottom:14px;z-index:18;display:flex;flex-direction:column;gap:7px}
+.zoomctl button{width:40px;height:40px;border-radius:12px;border:1px solid var(--panel-line);
+  background:var(--panel,rgba(14,18,32,.85));color:var(--text);font-size:17px;cursor:pointer;
+  backdrop-filter:blur(8px);transition:.15s;font-family:var(--mono);line-height:1}
+.zoomctl button:hover{background:rgba(255,255,255,.10)}
+#cv{touch-action:none}
+</style>
+
+<script id="manabi-v2-js">
+(function(){
+"use strict";
+var stage=document.querySelector('.stage'), cvEl=document.getElementById('cv');
+var asideEl=document.getElementById('aside'), ptog=document.getElementById('ptog');
+
+/* --- データパネル：外側タップ / Esc で閉じる --- */
+document.addEventListener('pointerdown',function(e){
+  if(!asideEl || !asideEl.classList.contains('open')) return;
+  if(asideEl.contains(e.target)) return;
+  if(ptog && ptog.contains(e.target)) return;
+  asideEl.classList.remove('open');
+},true);
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape' && asideEl) asideEl.classList.remove('open');
+});
+
+/* --- 操作パネル：折りたたみ --- */
+var ctl=document.querySelector('.controls');
+if(ctl){
+  var head=document.createElement('button');
+  head.type='button'; head.className='ctl-head';
+  head.innerHTML='<span>そうさ</span><span class="ch-ico">▼</span>';
+  ctl.insertBefore(head, ctl.firstChild);
+  head.addEventListener('click',function(){
+    ctl.classList.toggle('min');
+    try{ if(typeof resize==='function') resize(); }catch(err){}
+  });
+}
+
+/* --- 図のパン＆ズーム --- */
+if(stage && cvEl && typeof VIEW!=='undefined'){
+  var pts=new Map(), pan=null, pinch=null, lastUp=0;
+  function grabbed(){ try{ return (typeof dragging!=='undefined') && dragging; }catch(err){ return false; } }
+  function refresh(){ try{ if(typeof resize==='function') resize(); }catch(err){} }
+  function local(x,y){ var r=stage.getBoundingClientRect(); return {x:x-r.left, y:y-r.top}; }
+  function zoomAt(px,py,k){
+    var w=stage.clientWidth, h=stage.clientHeight;
+    var nz=Math.min(6, Math.max(1, VIEW.z*k)); k=nz/VIEW.z;
+    VIEW.x=k*VIEW.x+(k-1)*(w/2-px);
+    VIEW.y=k*VIEW.y+(k-1)*(h/2-py);
+    VIEW.z=nz; refresh();
+  }
+  function resetView(){ VIEW.z=1; VIEW.x=0; VIEW.y=0; refresh(); }
+
+  cvEl.addEventListener('wheel',function(e){
+    e.preventDefault();
+    var p=local(e.clientX,e.clientY);
+    zoomAt(p.x,p.y, Math.pow(1.0016, -e.deltaY));
+  },{passive:false});
+
+  cvEl.addEventListener('pointerdown',function(e){
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{ cvEl.setPointerCapture(e.pointerId); }catch(err){}
+    if(pts.size===2){
+      /* 2本目の指：ページ側のドラッグを解放してピンチへ */
+      try{ window.dispatchEvent(new PointerEvent('pointerup')); }
+      catch(err){ window.dispatchEvent(new Event('pointerup')); }
+      var a=Array.from(pts.values());
+      pinch={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1,
+             mx:(a[0].x+a[1].x)/2, my:(a[0].y+a[1].y)/2};
+      pan=null;
+    }else if(pts.size===1 && !grabbed()){
+      pan={x:e.clientX,y:e.clientY};
+    }
+  });
+
+  cvEl.addEventListener('pointermove',function(e){
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch && pts.size>=2){
+      var a=Array.from(pts.values());
+      var d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1;
+      var mx=(a[0].x+a[1].x)/2, my=(a[0].y+a[1].y)/2;
+      var p=local(mx,my);
+      zoomAt(p.x,p.y, d/pinch.d);
+      VIEW.x+=mx-pinch.mx; VIEW.y+=my-pinch.my; refresh();
+      pinch={d:d,mx:mx,my:my};
+      e.preventDefault();
+    }else if(pan && !grabbed()){
+      VIEW.x+=e.clientX-pan.x; VIEW.y+=e.clientY-pan.y;
+      pan={x:e.clientX,y:e.clientY}; refresh();
+      e.preventDefault();
+    }
+  });
+
+  function endPt(e){
+    if(!pts.has(e.pointerId) && e.pointerId!==undefined && pts.size===0) {}
+    pts.delete(e.pointerId);
+    if(pts.size<2) pinch=null;
+    if(pts.size===0){
+      pan=null;
+      if(e.type==='pointerup'){
+        var now=Date.now();
+        if(now-lastUp<330 && !grabbed()) resetView();   /* ダブルタップでリセット */
+        lastUp=now;
+      }
+    }else if(pts.size===1){
+      var a=Array.from(pts.values())[0];
+      pan = grabbed()? null : {x:a.x,y:a.y};
+    }
+  }
+  window.addEventListener('pointerup',endPt);
+  window.addEventListener('pointercancel',endPt);
+  cvEl.addEventListener('dblclick',function(){ if(!grabbed()) resetView(); });
+
+  var zc=document.getElementById('zoomCtl');
+  if(zc){
+    zc.addEventListener('pointerdown',function(e){ e.stopPropagation(); });
+    Array.prototype.forEach.call(zc.querySelectorAll('button'),function(b){
+      b.addEventListener('click',function(){
+        var w=stage.clientWidth/2, h=stage.clientHeight/2;
+        if(b.dataset.zz==='in') zoomAt(w,h,1.35);
+        else if(b.dataset.zz==='out') zoomAt(w,h,1/1.35);
+        else resetView();
+      });
+    });
+  }
+}
 })();
 </script>
 </body>
