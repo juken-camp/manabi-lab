@@ -162,18 +162,38 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);
 </style>
 
 <style id="manabi-responsive">
-/* ===== まなびラボ 表示強化（横画面・スマホ対応 / 自動追加） ===== */
+/* ===== まなびラボ 表示強化（操作パネルを左サイドに縦配置 / 自動追加） ===== */
 .hint{transition:opacity .4s ease}
 .hint.is-hidden{opacity:0;pointer-events:none}
 
-/* 横向きスマホなど「高さが低い画面」でも右パネルを引き出し式にして、
-   シミュ本体に画面を最大限ゆずる（幅820px版だけでは横向きスマホを拾えないため） */
+/* 操作パネルを左サイドに縦並びで配置（中央のシミュレーションを隠さない） */
+.controls{
+  left:14px !important; right:auto !important; bottom:auto !important; top:50% !important;
+  transform:translateY(-50%) !important;
+  flex-direction:column !important; align-items:stretch !important; flex-wrap:nowrap !important;
+  gap:9px !important; width:min(214px,46vw) !important; max-width:214px !important;
+  max-height:calc(100% - 18px) !important; overflow-y:auto !important; overflow-x:hidden !important;
+  padding:12px !important;
+}
+.controls > button{width:100% !important; justify-content:center !important; white-space:nowrap !important}
+.controls .sl{width:100% !important; display:flex !important; align-items:center !important; gap:7px !important}
+.controls .sl label{flex:0 0 auto !important; white-space:nowrap !important}
+.controls .sl input[type=range]{flex:1 1 auto !important; width:auto !important; min-width:0 !important}
+.controls .sl b{flex:0 0 auto !important; white-space:nowrap !important; text-align:right !important}
+.controls .seg{width:100% !important; display:flex !important}
+.controls .seg button{flex:1 1 0 !important; padding:6px 4px !important; text-align:center !important}
+.controls .toggle{width:100% !important; display:flex !important; align-items:center !important; justify-content:space-between !important}
+
+/* 使い方ヒントは下中央へ（左の操作パネルと重ならないように） */
+.hint{left:50% !important; right:auto !important; top:auto !important; bottom:12px !important;
+  transform:translateX(-50%) !important; max-width:80vw !important; text-align:center !important}
+
+/* 横向きスマホなど高さが低い画面でも、右パネル(データ)は引き出し式に */
 @media (max-height:520px) and (max-width:1100px){
   main{grid-template-columns:1fr !important}
   aside{position:fixed !important;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
     transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
-    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);
-    border-left:1px solid var(--panel-line)}
+    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);border-left:1px solid var(--panel-line)}
   aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
   .panel-toggle{display:flex !important;position:absolute;top:10px;right:12px;z-index:20;
     align-items:center;gap:6px;border:1px solid var(--panel-line);background:var(--panel);
@@ -182,16 +202,11 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);
   .panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
     background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;
     border-radius:9px;font-size:17px;cursor:pointer}
-  .hint{top:10px !important;left:10px !important;bottom:auto !important;right:auto !important;
-    font-size:10px !important;max-width:52vw;line-height:1.6}
-  .controls{bottom:8px !important;gap:8px 11px !important;padding:8px 11px !important;max-width:96% !important}
-  .controls .sl input[type=range]{width:104px !important}
-  .controls .sl label{font-size:11px !important}
-  .controls .sl b{min-width:46px !important}
-  .controls .seg button{padding:6px 10px !important}
+  .controls{width:min(196px,52vw) !important;max-width:196px !important;
+    max-height:calc(100% - 14px) !important;padding:10px !important;gap:7px !important}
 }
 
-/* 縦向きスマホ：横向きをやさしく案内（閉じれば縦のままでも使える） */
+/* 縦向きスマホ：横向きをやさしく案内 */
 .rotate-tip{display:none}
 @media (max-width:820px) and (orientation:portrait){
   .rotate-tip{display:flex;position:fixed;inset:0;z-index:90;flex-direction:column;
@@ -345,27 +360,91 @@ function drawPhaseK(c,cx,cy,R,k,right,opt){
     c.arc(cx,cy,R,Math.PI/2,-Math.PI/2,false);
     c.ellipse(cx,cy,Math.abs(xr),R,0,-Math.PI/2,Math.PI/2,xr>0);
   }
-  c.closePath(); c.fillStyle=opt.lit||'#ffd98a'; c.fill();
+  c.closePath();
+  if(opt.tex){
+    const hx=cx+(right?1:-1)*R*0.45;
+    const lg=c.createRadialGradient(hx,cy-R*0.2,R*0.1,cx,cy,R*1.1);
+    lg.addColorStop(0,'#fff3d2'); lg.addColorStop(0.55,opt.lit||'#ffe2a0'); lg.addColorStop(1,'#d9b876');
+    c.fillStyle=lg;
+  }else c.fillStyle=opt.lit||'#ffd98a';
+  c.fill();
+  if(opt.tex){
+    /* 金星の雲の帯（明部のみ・うっすら） */
+    c.save(); c.clip();
+    c.globalAlpha=0.10; c.strokeStyle='#9a7c3f'; c.lineWidth=R*0.10; c.lineCap='round';
+    for(let i=-2;i<=2;i++){
+      const yy=cy+i*R*0.34;
+      c.beginPath(); c.moveTo(cx-R,yy);
+      c.quadraticCurveTo(cx, yy+R*0.12*(i%2?1:-1), cx+R, yy);
+      c.stroke();
+    }
+    c.globalAlpha=1; c.restore();
+    /* 周辺減光 */
+    c.save(); c.beginPath(); c.arc(cx,cy,R,0,TAU); c.clip();
+    const hx2=cx+(right?1:-1)*R*0.3;
+    const ld=c.createRadialGradient(hx2,cy-R*0.2,R*0.3,cx,cy,R);
+    ld.addColorStop(0,'rgba(0,0,0,0)'); ld.addColorStop(0.8,'rgba(0,0,0,0.04)'); ld.addColorStop(1,'rgba(20,12,4,0.35)');
+    c.fillStyle=ld; c.fillRect(cx-R,cy-R,2*R,2*R);
+    c.restore();
+    /* 厚い大気のリム光 */
+    const ag=c.createRadialGradient(cx,cy,R*0.92,cx,cy,R*1.16);
+    ag.addColorStop(0,'rgba(255,214,140,0)'); ag.addColorStop(0.55,'rgba(255,214,140,0.30)'); ag.addColorStop(1,'rgba(255,214,140,0)');
+    c.fillStyle=ag; c.beginPath(); c.arc(cx,cy,R*1.16,0,TAU); c.fill();
+  }
   c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=1;
   c.beginPath(); c.arc(cx,cy,R,0,TAU); c.stroke();
   c.restore();
 }
 
-/* 上面視の天体：光る半分=太陽向き */
+/* 上面視の天体：光る半分=太陽向き（やわらかい明暗境界） */
 function drawTopBody(c,x,y,r,litCol,darkCol){
   const ang=Math.atan2(SUN.y-y, SUN.x-x);     // 太陽方向(canvas)
-  c.beginPath(); c.arc(x,y,r,0,TAU); c.fillStyle=darkCol; c.fill();
-  c.beginPath(); c.arc(x,y,r,ang-Math.PI/2,ang+Math.PI/2,false); c.closePath();
-  c.fillStyle=litCol; c.fill();
-  c.strokeStyle='rgba(255,255,255,.15)'; c.lineWidth=1; c.beginPath(); c.arc(x,y,r,0,TAU); c.stroke();
+  const gx1=x+Math.cos(ang)*r, gy1=y+Math.sin(ang)*r;
+  const gx2=x-Math.cos(ang)*r, gy2=y-Math.sin(ang)*r;
+  const g=c.createLinearGradient(gx1,gy1,gx2,gy2);
+  g.addColorStop(0,'#ffffff'); g.addColorStop(0.12,litCol);
+  g.addColorStop(0.46,litCol); g.addColorStop(0.6,darkCol); g.addColorStop(1,darkCol);
+  c.beginPath(); c.arc(x,y,r,0,TAU); c.fillStyle=g; c.fill();
+  if(litCol==='#5b8fd0'){                      // 地球には大気のリム光
+    const ag=c.createRadialGradient(x,y,r*0.85,x,y,r*1.45);
+    ag.addColorStop(0,'rgba(110,180,255,0)'); ag.addColorStop(0.5,'rgba(110,180,255,0.3)'); ag.addColorStop(1,'rgba(110,180,255,0)');
+    c.save(); c.fillStyle=ag; c.beginPath(); c.arc(x,y,r*1.45,0,TAU); c.fill(); c.restore();
+  }
+  c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=1; c.beginPath(); c.arc(x,y,r,0,TAU); c.stroke();
 }
 
 /* ============================================================
    メイン描画
    ============================================================ */
+/* ============================================================
+   背景の星空（スクリーン座標・固定シード）
+   ============================================================ */
+const STARS=(()=>{ const s=[]; let seed=11;
+  const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  for(let i=0;i<160;i++) s.push({x:rnd(),y:rnd(),r:rnd()*1.1+0.35,a:rnd()*0.5+0.14,tw:rnd()*TAU});
+  return s; })();
+function drawSky(w,h,t){
+  const g=ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#05070f'); g.addColorStop(.55,'#04050b'); g.addColorStop(1,'#070a14');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  let n=ctx.createRadialGradient(w*0.2,h*0.16,0,w*0.2,h*0.16,Math.max(w,h)*0.5);
+  n.addColorStop(0,'rgba(64,84,160,0.09)'); n.addColorStop(1,'rgba(64,84,160,0)');
+  ctx.fillStyle=n; ctx.fillRect(0,0,w,h);
+  n=ctx.createRadialGradient(w*0.85,h*0.85,0,w*0.85,h*0.85,Math.max(w,h)*0.4);
+  n.addColorStop(0,'rgba(150,96,60,0.06)'); n.addColorStop(1,'rgba(150,96,60,0)');
+  ctx.fillStyle=n; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#dfe8ff';
+  for(const s of STARS){
+    ctx.globalAlpha=s.a*(0.72+0.28*Math.sin(t*0.7+s.tw));
+    ctx.beginPath(); ctx.arc(s.x*w,s.y*h,s.r,0,TAU); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,cv.width/DPR,cv.height/DPR);
+  drawSky(cv.width/DPR, cv.height/DPR, performance.now()/1000);
   ctx.save(); ctx.translate(ox,oy); ctx.scale(scale,scale);
 
   const vp=venusPos(state.day);
@@ -387,11 +466,19 @@ function draw(){
   ctx.strokeStyle='rgba(245,166,35,0.28)'; ctx.setLineDash([3,5]);
   ctx.beginPath(); ctx.arc(SUN.x,SUN.y,RV,0,TAU); ctx.stroke(); ctx.setLineDash([]);
 
-  /* 太陽 */
-  const sg=ctx.createRadialGradient(SUN.x,SUN.y,3,SUN.x,SUN.y,46);
-  sg.addColorStop(0,'#fff4d6'); sg.addColorStop(.45,'#f5a623'); sg.addColorStop(1,'rgba(245,166,35,0)');
-  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(SUN.x,SUN.y,46,0,TAU); ctx.fill();
-  ctx.fillStyle='#ffe9b0'; ctx.beginPath(); ctx.arc(SUN.x,SUN.y,15,0,TAU); ctx.fill();
+  /* 太陽（コロナ＋本体） */
+  const tSun=performance.now()/1000;
+  let sg=ctx.createRadialGradient(SUN.x,SUN.y,0,SUN.x,SUN.y,86);
+  sg.addColorStop(0,'rgba(255,236,180,0.5)'); sg.addColorStop(0.3,'rgba(247,170,52,0.26)');
+  sg.addColorStop(0.65,'rgba(235,120,30,0.08)'); sg.addColorStop(1,'rgba(235,110,30,0)');
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(SUN.x,SUN.y,86,0,TAU); ctx.fill();
+  sg=ctx.createRadialGradient(SUN.x-4,SUN.y-4,1,SUN.x,SUN.y,17);
+  sg.addColorStop(0,'#fffdf4'); sg.addColorStop(0.55,'#ffe9a8'); sg.addColorStop(1,'#f5a623');
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(SUN.x,SUN.y,15,0,TAU); ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.18; ctx.fillStyle='#ffd98e';
+  for(let i=0;i<6;i++){ const aa=tSun*0.4+i*TAU/6;
+    ctx.beginPath(); ctx.arc(SUN.x+Math.cos(aa)*10, SUN.y+Math.sin(aa)*10, 3.6,0,TAU); ctx.fill(); }
+  ctx.restore();
   label('太陽',SUN.x,SUN.y-26,'11px','#ffce7a');
 
   /* 軌道上ゴースト（距離で大きさ・正しい位相） */
@@ -404,8 +491,8 @@ function draw(){
   }
 
   /* 主要配置ラベル（外合・内合・最大離角） */
-  label('外合',SUN.x,SUN.y-RV-12,'10px','rgba(170,182,210,.8)',true);
-  label('内合',SUN.x,SUN.y+RV+13,'10px','rgba(170,182,210,.8)',true);
+  label('外合',SUN.x-40,SUN.y-RV-2,'10px','rgba(170,182,210,.8)',true);
+  label('内合',SUN.x-40,SUN.y+RV+4,'10px','rgba(170,182,210,.8)',true);
   drawElongLabel();
 
   /* 視線 地球→金星 */
@@ -445,7 +532,7 @@ function draw(){
     label('☀ 太陽に近すぎて',GP.x,GP.y-4,'12px','#8893ad');
     label('見えない',GP.x,GP.y+14,'12px','#8893ad');
   }else{
-    drawPhaseK(ctx,GP.x,GP.y,Rtel,k,litRight(vp),{lit:'#ffe2a0',dark:'#3a2f1c'});
+    drawPhaseK(ctx,GP.x,GP.y,Rtel,k,litRight(vp),{lit:'#ffe2a0',dark:'#3a2f1c',tex:true});
     // 太陽方向マーカー
     const sx=GP.x+(litRight(vp)?1:-1)*(Rtel+13);
     ctx.fillStyle='#ffce7a'; ctx.font="12px 'Zen Kaku Gothic New'"; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -632,13 +719,13 @@ function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2);
   cv.width=st.width*DPR; cv.height=st.height*DPR;
   cv.style.width=st.width+'px'; cv.style.height=st.height+'px';
-  const FIT={x:86,y:58,w:540,h:348};   // 太陽系＋望遠鏡像が収まる範囲
+  const FIT={x:86,y:50,w:540,h:372};   // 太陽系(地球ラベルまで)＋望遠鏡像が収まる範囲
   const ctrls=document.querySelector('.controls');
-  const reserve=(ctrls?ctrls.getBoundingClientRect().height:54)+18;
-  const availH=Math.max(150, st.height-reserve);
-  scale=Math.min(st.width/FIT.w, availH/FIT.h);
-  ox=(st.width-FIT.w*scale)/2 - FIT.x*scale;
-  oy=(availH-FIT.h*scale)/2 - FIT.y*scale;
+  const reserveW=(ctrls?ctrls.getBoundingClientRect().width:200)+28; // 左の操作パネルのぶんを空ける
+  const availW=Math.max(150, st.width-reserveW);
+  scale=Math.min(availW/FIT.w, st.height/FIT.h);
+  ox=reserveW+(availW-FIT.w*scale)/2 - FIT.x*scale;
+  oy=(st.height-FIT.h*scale)/2 - FIT.y*scale;
 }
 window.addEventListener('resize',resize);
 
