@@ -148,18 +148,38 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);displ
 </style>
 
 <style id="manabi-responsive">
-/* ===== まなびラボ 表示強化（横画面・スマホ対応 / 自動追加） ===== */
+/* ===== まなびラボ 表示強化（操作パネルを左サイドに縦配置 / 自動追加） ===== */
 .hint{transition:opacity .4s ease}
 .hint.is-hidden{opacity:0;pointer-events:none}
 
-/* 横向きスマホなど「高さが低い画面」でも右パネルを引き出し式にして、
-   シミュ本体に画面を最大限ゆずる（幅820px版だけでは横向きスマホを拾えないため） */
+/* 操作パネルを左サイドに縦並びで配置（中央のシミュレーションを隠さない） */
+.controls{
+  left:14px !important; right:auto !important; bottom:auto !important; top:50% !important;
+  transform:translateY(-50%) !important;
+  flex-direction:column !important; align-items:stretch !important; flex-wrap:nowrap !important;
+  gap:9px !important; width:min(214px,46vw) !important; max-width:214px !important;
+  max-height:calc(100% - 18px) !important; overflow-y:auto !important; overflow-x:hidden !important;
+  padding:12px !important;
+}
+.controls > button{width:100% !important; justify-content:center !important; white-space:nowrap !important}
+.controls .sl{width:100% !important; display:flex !important; align-items:center !important; gap:7px !important}
+.controls .sl label{flex:0 0 auto !important; white-space:nowrap !important}
+.controls .sl input[type=range]{flex:1 1 auto !important; width:auto !important; min-width:0 !important}
+.controls .sl b{flex:0 0 auto !important; white-space:nowrap !important; text-align:right !important}
+.controls .seg{width:100% !important; display:flex !important}
+.controls .seg button{flex:1 1 0 !important; padding:6px 4px !important; text-align:center !important}
+.controls .toggle{width:100% !important; display:flex !important; align-items:center !important; justify-content:space-between !important}
+
+/* 使い方ヒントは下中央へ（左の操作パネルと重ならないように） */
+.hint{left:50% !important; right:auto !important; top:auto !important; bottom:12px !important;
+  transform:translateX(-50%) !important; max-width:80vw !important; text-align:center !important}
+
+/* 横向きスマホなど高さが低い画面でも、右パネル(データ)は引き出し式に */
 @media (max-height:520px) and (max-width:1100px){
   main{grid-template-columns:1fr !important}
   aside{position:fixed !important;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
     transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
-    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);
-    border-left:1px solid var(--panel-line)}
+    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);border-left:1px solid var(--panel-line)}
   aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
   .panel-toggle{display:flex !important;position:absolute;top:10px;right:12px;z-index:20;
     align-items:center;gap:6px;border:1px solid var(--panel-line);background:var(--panel);
@@ -168,16 +188,11 @@ aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);displ
   .panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
     background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;
     border-radius:9px;font-size:17px;cursor:pointer}
-  .hint{top:10px !important;left:10px !important;bottom:auto !important;right:auto !important;
-    font-size:10px !important;max-width:52vw;line-height:1.6}
-  .controls{bottom:8px !important;gap:8px 11px !important;padding:8px 11px !important;max-width:96% !important}
-  .controls .sl input[type=range]{width:104px !important}
-  .controls .sl label{font-size:11px !important}
-  .controls .sl b{min-width:46px !important}
-  .controls .seg button{padding:6px 10px !important}
+  .controls{width:min(196px,52vw) !important;max-width:196px !important;
+    max-height:calc(100% - 14px) !important;padding:10px !important;gap:7px !important}
 }
 
-/* 縦向きスマホ：横向きをやさしく案内（閉じれば縦のままでも使える） */
+/* 縦向きスマホ：横向きをやさしく案内 */
 .rotate-tip{display:none}
 @media (max-width:820px) and (orientation:portrait){
   .rotate-tip{display:flex;position:fixed;inset:0;z-index:90;flex-direction:column;
@@ -382,16 +397,27 @@ function txt(s,x,y,size,col,align){
 function drawLens(){
   const top=axisY-lensH, bot=axisY+lensH, bulge=20;
   ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(lensX,top);
-  ctx.quadraticCurveTo(lensX+bulge,axisY,lensX,bot);
-  ctx.quadraticCurveTo(lensX-bulge,axisY,lensX,top);
-  ctx.closePath();
+  const lensPath=()=>{ ctx.beginPath();
+    ctx.moveTo(lensX,top);
+    ctx.quadraticCurveTo(lensX+bulge,axisY,lensX,bot);
+    ctx.quadraticCurveTo(lensX-bulge,axisY,lensX,top);
+    ctx.closePath(); };
+  lensPath();
   const g=ctx.createLinearGradient(lensX-bulge,0,lensX+bulge,0);
-  g.addColorStop(0,'rgba(95,211,224,0.10)'); g.addColorStop(.5,'rgba(159,240,251,0.22)'); g.addColorStop(1,'rgba(95,211,224,0.10)');
+  g.addColorStop(0,'rgba(110,205,235,0.17)'); g.addColorStop(0.18,'rgba(150,235,250,0.07)');
+  g.addColorStop(.5,'rgba(195,246,255,0.25)'); g.addColorStop(0.82,'rgba(150,235,250,0.07)'); g.addColorStop(1,'rgba(110,205,235,0.17)');
   ctx.fillStyle=g; ctx.fill();
-  ctx.shadowColor='rgba(95,211,224,0.7)'; ctx.shadowBlur=12;
-  ctx.strokeStyle='rgba(159,240,251,0.7)'; ctx.lineWidth=1.8; ctx.stroke();
+  /* ガラス内部の反射光 */
+  ctx.save(); lensPath(); ctx.clip();
+  ctx.strokeStyle='rgba(235,250,255,0.5)'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(lensX-7,top+16); ctx.quadraticCurveTo(lensX-13,axisY,lensX-7,bot-16); ctx.stroke();
+  ctx.globalAlpha=0.3; ctx.strokeStyle='#bff0ff';
+  ctx.beginPath(); ctx.moveTo(lensX+8,top+22); ctx.quadraticCurveTo(lensX+12,axisY,lensX+8,bot-22); ctx.stroke();
+  ctx.globalAlpha=0.6; ctx.fillStyle='#eafcff';
+  ctx.beginPath(); ctx.ellipse(lensX-4,top+18,2.4,7,0.5,0,TAU); ctx.fill();
+  ctx.restore();
+  ctx.shadowColor='rgba(95,211,224,0.7)'; ctx.shadowBlur=14;
+  ctx.strokeStyle='rgba(178,242,252,0.85)'; ctx.lineWidth=1.8; lensPath(); ctx.stroke();
   ctx.shadowBlur=0;
   // 凸レンズの記号（上下に外向き矢印）
   ctx.strokeStyle='rgba(159,240,251,0.6)'; ctx.lineWidth=1.6; ctx.fillStyle='rgba(159,240,251,0.6)';
@@ -408,6 +434,14 @@ function drawLens(){
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,cv.width/DPR,cv.height/DPR);
+  /* 光学実験室の背景 */
+  const bw=cv.width/DPR, bh=cv.height/DPR;
+  let bgl=ctx.createLinearGradient(0,0,0,bh);
+  bgl.addColorStop(0,'#060810'); bgl.addColorStop(0.5,'#04050b'); bgl.addColorStop(1,'#070a13');
+  ctx.fillStyle=bgl; ctx.fillRect(0,0,bw,bh);
+  bgl=ctx.createRadialGradient(bw*0.55,bh*0.45,0,bw*0.55,bh*0.45,Math.max(bw,bh)*0.55);
+  bgl.addColorStop(0,'rgba(95,180,224,0.05)'); bgl.addColorStop(1,'rgba(95,180,224,0)');
+  ctx.fillStyle=bgl; ctx.fillRect(0,0,bw,bh);
   ctx.save(); ctx.translate(ox,oy); ctx.scale(scale,scale);
   ctx.beginPath(); ctx.rect(0,0,VW,VH); ctx.clip();   // letterbox外に出さない
 
@@ -626,11 +660,11 @@ function resize(){
   cv.style.width=st.width+'px'; cv.style.height=st.height+'px';
   const FIT={x:34,y:96,w:600,h:290};   // 中身のある範囲だけにフィット
   const ctrls=document.querySelector('.controls');
-  const reserve=(ctrls?ctrls.getBoundingClientRect().height:54)+18;
-  const availH=Math.max(150, st.height-reserve);
-  scale=Math.min(st.width/FIT.w, availH/FIT.h);
-  ox=(st.width-FIT.w*scale)/2 - FIT.x*scale;
-  oy=(availH-FIT.h*scale)/2 - FIT.y*scale;
+  const reserveW=(ctrls?ctrls.getBoundingClientRect().width:200)+28; // 左の操作パネルのぶんを空ける
+  const availW=Math.max(150, st.width-reserveW);
+  scale=Math.min(availW/FIT.w, st.height/FIT.h);
+  ox=reserveW+(availW-FIT.w*scale)/2 - FIT.x*scale;
+  oy=(st.height-FIT.h*scale)/2 - FIT.y*scale;
 }
 window.addEventListener('resize',resize);
 
