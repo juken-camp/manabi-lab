@@ -212,6 +212,7 @@
 </head>
 <body>
 <header>
+  <a class="navback" href="./index.html" aria-label="まなびラボのトップへ戻る"><span class="nb-arrow">←</span><span class="nb-label">まなびラボ</span></a>
   <div class="accent"></div>
   <div>
     <h1>電気回路</h1>
@@ -223,8 +224,13 @@
 <main>
   <div class="stage">
     <canvas id="cv"></canvas>
-    <div class="hint"><b>電圧・抵抗</b>で粒の速さと明るさが変わる<br><b>スイッチ</b>を切ると回路が切れて消える</div>
-    <button class="panel-toggle" id="ptog">☰ 測定値</button>
+    <div class="hint"><b>電圧・抵抗</b>で粒の速さと明るさが変わる<br><b>スイッチ</b>を切ると回路が切れて消える<br>あいた所をドラッグ＝<b>図を動かす</b>／ピンチ・ホイール＝<b>ズーム</b><br>ダブルタップ＝<b>表示をもとに戻す</b></div>
+    <button class="panel-toggle" id="ptog">📊 測定値</button>
+    <div class="zoomctl" id="zoomCtl">
+      <button type="button" data-zz="in" aria-label="拡大">＋</button>
+      <button type="button" data-zz="out" aria-label="縮小">−</button>
+      <button type="button" data-zz="reset" aria-label="表示をもとに戻す">⟲</button>
+    </div>
 
     <div class="controls">
       <div class="seg" id="modeSeg">
@@ -247,7 +253,6 @@
     <div class="tabbar">
       <button data-tab="meter" class="on">測定値</button>
       <button data-tab="ex">解説</button>
-      <button data-tab="quiz">クイズ</button>
     </div>
     <div class="panelbody" id="panelbody"></div>
   </aside>
@@ -258,6 +263,7 @@
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
 let mode='single', V=4.5, R1=20, R2=20, closed=true, showDir=true;
 let DPR=1, cw=0, ch=0;
+var VIEW={z:1,x:0,y:0};   /* 図のパン＆ズーム（manabi v2） */
 const VW=660, VH=460;
 let phases=[];
 
@@ -494,8 +500,10 @@ function loop(t){
   const ctrls=document.querySelector('.controls');
   const reserveW=(ctrls?ctrls.getBoundingClientRect().width:200)+28; // 左の操作パネルのぶん
   const availW=Math.max(150, cw-reserveW);
-  const s=Math.min(availW/FIT.w, ch/FIT.h);
-  ctx.save();ctx.translate(reserveW+(availW-FIT.w*s)/2 - FIT.x*s,(ch-FIT.h*s)/2 - FIT.y*s);ctx.scale(s,s);
+  let s=Math.min(availW/FIT.w, ch/FIT.h);
+  let vtx=reserveW+(availW-FIT.w*s)/2 - FIT.x*s, vty=(ch-FIT.h*s)/2 - FIT.y*s;
+  vtx=VIEW.z*(vtx-cw/2)+cw/2+VIEW.x; vty=VIEW.z*(vty-ch/2)+ch/2+VIEW.y; s*=VIEW.z;
+  ctx.save();ctx.translate(vtx,vty);ctx.scale(s,s);
 
   c.paths.forEach((p,i)=>{p._i=i; phases[i]=(phases[i]+p.current*1.8*dt)%1;});
   c.paths.forEach(p=>drawWire(p.pts));
@@ -530,7 +538,7 @@ document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');mode=b.dataset.m;phases=[];
   document.querySelector('.sl.r2').classList.toggle('hide',mode==='single');
-  if(activeTab!=='quiz')renderPanel();
+  renderPanel();
 });
 const voltEl=document.getElementById('volt'),r1El=document.getElementById('r1'),r2El=document.getElementById('r2');
 function trackP(el){const mn=+el.min,mx=+el.max;el.style.setProperty('--p',((el.value-mn)/(mx-mn)*100)+'%');}
@@ -541,7 +549,7 @@ r2El.oninput=()=>{R2=+r2El.value;document.getElementById('r2v').textContent=R2+'
 function bindToggle(id,fn){const el=document.getElementById(id);el.onclick=()=>{el.classList.toggle('on');fn(el.classList.contains('on'));};}
 bindToggle('tgSw',v=>closed=v);
 bindToggle('tgDir',v=>showDir=v);
-document.getElementById('ptog').onclick=()=>document.getElementById('aside').classList.add('open');
+document.getElementById('ptog').onclick=()=>document.getElementById('aside').classList.toggle('open');
 document.getElementById('pclose').onclick=()=>document.getElementById('aside').classList.remove('open');
 
 /* ===== サイドパネル ===== */
@@ -555,7 +563,6 @@ function renderPanel(){
   const body=document.getElementById('panelbody');
   if(activeTab==='meter') body.innerHTML=meterHTML(build());
   else if(activeTab==='ex') body.innerHTML=exHTML();
-  else { body.innerHTML=quizHTML(); bindQuiz(); }
 }
 function fmtA(x){return x.toFixed(2);}
 function meterHTML(c){
@@ -586,52 +593,6 @@ function exHTML(){
   return `<div class="ex">${body}</div>`;
 }
 
-/* ===== クイズ ===== */
-const QBANK=[
- {q:'豆電球を直列に2個つなぐと、1個のときより明るさは？',o:['明るくなる','暗くなる','変わらない'],a:1,e:'直列は合成抵抗が大きくなり電流が減るので暗くなります。'},
- {q:'豆電球を並列に2個つなぐと、それぞれの明るさは1個のときと比べて？',o:['明るくなる','暗くなる','ほぼ同じ'],a:2,e:'並列では各電球に電池と同じ電圧がかかるので、明るさはほぼ同じです。'},
- {q:'直列回路で、各点を流れる電流の大きさは？',o:['どこも同じ','場所で変わる','電池の近くだけ大きい'],a:0,e:'直列は道が1本なので、電流はどこも同じ大きさです。'},
- {q:'並列回路で、各豆電球にかかる電圧は？',o:['電池の電圧と同じ','半分ずつに分かれる','枝で変わる'],a:0,e:'並列では各枝に電池の電圧がそのままかかります。'},
- {q:'電圧を2倍にすると（抵抗そのまま）、電流は？',o:['2倍','半分','変わらない'],a:0,e:'I＝V÷R。電圧2倍で電流も2倍です。'},
- {q:'抵抗を2倍にすると（電圧そのまま）、電流は？',o:['2倍','半分','変わらない'],a:1,e:'I＝V÷R。抵抗2倍で電流は半分です。'},
- {q:'直列の合成抵抗は、もとの抵抗1個より？',o:['大きくなる','小さくなる','同じ'],a:0,e:'直列は R＝R₁＋R₂ で大きくなります。'},
- {q:'並列の合成抵抗は、もとの抵抗1個より？',o:['大きくなる','小さくなる','同じ'],a:1,e:'並列は道が増えるぶん、合成抵抗は小さくなります。'},
- {q:'①を直列につなぎ、その先に②③を並列にした回路。一番明るい豆電球は？',o:['①','②と③','全部同じ'],a:0,e:'①には全体の電流がそのまま流れ、②③はそれを半分ずつに分けるので、①が一番明るい。'},
- {q:'①の枝と、②③を直列にした枝を並列につないだ回路。②③の明るさは①と比べて？',o:['明るい','暗い','同じ'],a:1,e:'①には電池の電圧がそのままかかるが、②③は直列で電圧を半分ずつに分けるので、②③は①より暗い。'},
-];
-let quiz=null;
-function newQuiz(){return {active:true,order:[...Array(QBANK.length).keys()].sort(()=>Math.random()-0.5).slice(0,6),idx:0,score:0,answered:null};}
-function quizHTML(){
-  if(!quiz||!quiz.active)return `<div class="empty"><span class="big">📝</span>電流クイズに挑戦！<br>予想してから答えよう。<button class="btn primary" id="qstart" style="margin-top:14px">クイズを始める</button></div>`;
-  const Q=QBANK[quiz.order[quiz.idx]];
-  const opts=Q.o.map((o,i)=>{
-    let cls='quiz-opt';
-    if(quiz.answered!=null){if(i===Q.a)cls+=' ok';else if(i===quiz.answered)cls+=' ng';}
-    return `<button class="${cls}" data-i="${i}" ${quiz.answered!=null?'disabled':''}>${o}</button>`;
-  }).join('');
-  let fb='';
-  if(quiz.answered!=null){const ok=quiz.answered===Q.a;
-    fb=`<div class="quiz-fb show ${ok?'ok':'ng'}"><span class="lab">${ok?'正解':'おしい'}</span>${Q.e}</div>`;}
-  const next=quiz.answered!=null?`<button class="btn primary" id="qnext">${quiz.idx<quiz.order.length-1?'次の問題 →':'結果を見る'}</button>`:'';
-  return `<div class="quiz-prog">Q ${quiz.idx+1} / ${quiz.order.length} ・ SCORE ${quiz.score}</div>
-    <div class="quiz-q"><span class="num">Q${quiz.idx+1}</span>${Q.q}</div>${opts}${fb}${next}`;
-}
-function bindQuiz(){
-  const s=document.getElementById('qstart');if(s)s.onclick=()=>{quiz=newQuiz();renderPanel();};
-  document.querySelectorAll('.quiz-opt').forEach(b=>b.onclick=()=>{
-    if(quiz.answered!=null)return;quiz.answered=+b.dataset.i;
-    if(quiz.answered===QBANK[quiz.order[quiz.idx]].a)quiz.score++;renderPanel();
-  });
-  const n=document.getElementById('qnext');if(n)n.onclick=()=>{
-    if(quiz.idx<quiz.order.length-1){quiz.idx++;quiz.answered=null;renderPanel();}
-    else{
-      const sc=quiz.score,tot=quiz.order.length;const msg=sc===tot?'パーフェクト！回路マスター⚡':sc>=tot*0.6?'よくできました！':'解説タブを見て復習しよう。';
-      document.getElementById('panelbody').innerHTML=`<div class="quiz-result"><div class="score">${sc}/${tot}</div><div class="lab">${msg}</div><button class="btn primary" id="qretry">もう一度</button></div>`;
-      document.getElementById('qretry').onclick=()=>{quiz=newQuiz();renderPanel();};
-      quiz.active=false;
-    }
-  };
-}
 function updateMeter(c){
   const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
   // 構造が無ければ（モード切替直後など）作り直す
@@ -684,6 +645,171 @@ resize();renderPanel();requestAnimationFrame(loop);
   /* 3) 縦向き案内を閉じる */
   var rx=doc.getElementById('manabiRotateX'), rt=doc.getElementById('manabiRotate');
   if(rx && rt){ rx.addEventListener('click', function(){ rt.classList.add('is-hidden'); }); }
+})();
+</script>
+
+<style id="manabi-v2">
+/* ===== まなびラボ v2 ===== */
+/* トップへ戻る */
+.navback{display:inline-flex;align-items:center;gap:7px;flex:none;border:1px solid var(--panel-line);
+  background:rgba(255,255,255,.04);color:var(--text);text-decoration:none;font-size:12.5px;font-weight:600;
+  padding:7px 12px;border-radius:11px;transition:.15s;white-space:nowrap}
+.navback:hover{background:rgba(255,255,255,.10)}
+.navback .nb-arrow{font-family:var(--mono);color:var(--dim)}
+@media(max-width:620px){.navback .nb-label{display:none}.navback{padding:7px 10px}}
+
+/* データパネルは常に引き出し式（図を最大化） */
+main{grid-template-columns:1fr !important}
+aside{position:fixed !important;top:0;right:0;width:min(340px,88vw);height:100%;z-index:40;
+  transform:translateX(102%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+  background:rgba(8,11,20,.97);backdrop-filter:blur(12px);border-left:1px solid var(--panel-line)}
+aside.open{transform:none !important;box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+.panel-toggle{display:flex !important;position:absolute;top:12px;right:14px;z-index:20;align-items:center;gap:6px;
+  border:1px solid var(--panel-line);background:var(--panel,rgba(14,18,32,.85));color:var(--text);
+  font-family:var(--jp);font-size:12px;font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;
+  backdrop-filter:blur(8px)}
+.panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
+  background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;border-radius:9px;
+  font-size:17px;cursor:pointer}
+
+/* 操作パネルの折りたたみ */
+.ctl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;
+  background:transparent;color:var(--dim);font-family:var(--jp);font-size:11.5px;font-weight:700;
+  letter-spacing:.12em;cursor:pointer;padding:1px 2px 2px}
+.ctl-head .ch-ico{transition:transform .2s;font-size:10px}
+.controls.min{width:auto !important;min-width:0 !important;max-width:none !important;padding:9px 13px !important}
+.controls.min > *:not(.ctl-head){display:none !important}
+.controls.min .ctl-head{padding:0;letter-spacing:.1em}
+.controls.min .ch-ico{transform:rotate(-90deg)}
+
+/* ズーム操作 */
+.zoomctl{position:absolute;right:14px;bottom:14px;z-index:18;display:flex;flex-direction:column;gap:7px}
+.zoomctl button{width:40px;height:40px;border-radius:12px;border:1px solid var(--panel-line);
+  background:var(--panel,rgba(14,18,32,.85));color:var(--text);font-size:17px;cursor:pointer;
+  backdrop-filter:blur(8px);transition:.15s;font-family:var(--mono);line-height:1}
+.zoomctl button:hover{background:rgba(255,255,255,.10)}
+#cv{touch-action:none}
+</style>
+
+<script id="manabi-v2-js">
+(function(){
+"use strict";
+var stage=document.querySelector('.stage'), cvEl=document.getElementById('cv');
+var asideEl=document.getElementById('aside'), ptog=document.getElementById('ptog');
+
+/* --- データパネル：外側タップ / Esc で閉じる --- */
+document.addEventListener('pointerdown',function(e){
+  if(!asideEl || !asideEl.classList.contains('open')) return;
+  if(asideEl.contains(e.target)) return;
+  if(ptog && ptog.contains(e.target)) return;
+  asideEl.classList.remove('open');
+},true);
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape' && asideEl) asideEl.classList.remove('open');
+});
+
+/* --- 操作パネル：折りたたみ --- */
+var ctl=document.querySelector('.controls');
+if(ctl){
+  var head=document.createElement('button');
+  head.type='button'; head.className='ctl-head';
+  head.innerHTML='<span>そうさ</span><span class="ch-ico">▼</span>';
+  ctl.insertBefore(head, ctl.firstChild);
+  head.addEventListener('click',function(){
+    ctl.classList.toggle('min');
+    try{ if(typeof resize==='function') resize(); }catch(err){}
+  });
+}
+
+/* --- 図のパン＆ズーム --- */
+if(stage && cvEl && typeof VIEW!=='undefined'){
+  var pts=new Map(), pan=null, pinch=null, lastUp=0;
+  function grabbed(){ try{ return (typeof dragging!=='undefined') && dragging; }catch(err){ return false; } }
+  function refresh(){ try{ if(typeof resize==='function') resize(); }catch(err){} }
+  function local(x,y){ var r=stage.getBoundingClientRect(); return {x:x-r.left, y:y-r.top}; }
+  function zoomAt(px,py,k){
+    var w=stage.clientWidth, h=stage.clientHeight;
+    var nz=Math.min(6, Math.max(1, VIEW.z*k)); k=nz/VIEW.z;
+    VIEW.x=k*VIEW.x+(k-1)*(w/2-px);
+    VIEW.y=k*VIEW.y+(k-1)*(h/2-py);
+    VIEW.z=nz; refresh();
+  }
+  function resetView(){ VIEW.z=1; VIEW.x=0; VIEW.y=0; refresh(); }
+
+  cvEl.addEventListener('wheel',function(e){
+    e.preventDefault();
+    var p=local(e.clientX,e.clientY);
+    zoomAt(p.x,p.y, Math.pow(1.0016, -e.deltaY));
+  },{passive:false});
+
+  cvEl.addEventListener('pointerdown',function(e){
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{ cvEl.setPointerCapture(e.pointerId); }catch(err){}
+    if(pts.size===2){
+      /* 2本目の指：ページ側のドラッグを解放してピンチへ */
+      try{ window.dispatchEvent(new PointerEvent('pointerup')); }
+      catch(err){ window.dispatchEvent(new Event('pointerup')); }
+      var a=Array.from(pts.values());
+      pinch={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1,
+             mx:(a[0].x+a[1].x)/2, my:(a[0].y+a[1].y)/2};
+      pan=null;
+    }else if(pts.size===1 && !grabbed()){
+      pan={x:e.clientX,y:e.clientY};
+    }
+  });
+
+  cvEl.addEventListener('pointermove',function(e){
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch && pts.size>=2){
+      var a=Array.from(pts.values());
+      var d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1;
+      var mx=(a[0].x+a[1].x)/2, my=(a[0].y+a[1].y)/2;
+      var p=local(mx,my);
+      zoomAt(p.x,p.y, d/pinch.d);
+      VIEW.x+=mx-pinch.mx; VIEW.y+=my-pinch.my; refresh();
+      pinch={d:d,mx:mx,my:my};
+      e.preventDefault();
+    }else if(pan && !grabbed()){
+      VIEW.x+=e.clientX-pan.x; VIEW.y+=e.clientY-pan.y;
+      pan={x:e.clientX,y:e.clientY}; refresh();
+      e.preventDefault();
+    }
+  });
+
+  function endPt(e){
+    if(!pts.has(e.pointerId) && e.pointerId!==undefined && pts.size===0) {}
+    pts.delete(e.pointerId);
+    if(pts.size<2) pinch=null;
+    if(pts.size===0){
+      pan=null;
+      if(e.type==='pointerup'){
+        var now=Date.now();
+        if(now-lastUp<330 && !grabbed()) resetView();   /* ダブルタップでリセット */
+        lastUp=now;
+      }
+    }else if(pts.size===1){
+      var a=Array.from(pts.values())[0];
+      pan = grabbed()? null : {x:a.x,y:a.y};
+    }
+  }
+  window.addEventListener('pointerup',endPt);
+  window.addEventListener('pointercancel',endPt);
+  cvEl.addEventListener('dblclick',function(){ if(!grabbed()) resetView(); });
+
+  var zc=document.getElementById('zoomCtl');
+  if(zc){
+    zc.addEventListener('pointerdown',function(e){ e.stopPropagation(); });
+    Array.prototype.forEach.call(zc.querySelectorAll('button'),function(b){
+      b.addEventListener('click',function(){
+        var w=stage.clientWidth/2, h=stage.clientHeight/2;
+        if(b.dataset.zz==='in') zoomAt(w,h,1.35);
+        else if(b.dataset.zz==='out') zoomAt(w,h,1/1.35);
+        else resetView();
+      });
+    });
+  }
+}
 })();
 </script>
 </body>
