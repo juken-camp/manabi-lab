@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>溶解度と再結晶シミュレーター｜理科教材</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#04050b;--panel:rgba(14,18,32,0.85);--panel-line:rgba(120,150,210,0.18);
+    --amber:#f5a623;--amber-soft:#ffce7a;--cyan:#5fd3e0;--cyan-soft:#9ff0fb;--text:#e8ecf6;--dim:#8893ad;
+    --good:#5fe09a;--bad:#ff7a7a;
+    --jp:'Zen Kaku Gothic New',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{background:
+    radial-gradient(1100px 700px at 22% -10%, rgba(95,211,224,0.10), transparent 60%),
+    radial-gradient(900px 800px at 110% 120%, rgba(245,166,35,0.07), transparent 55%),var(--bg);
+    color:var(--text);font-family:var(--jp);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+  header{display:flex;align-items:center;gap:14px;padding:11px 18px;
+    border-bottom:1px solid var(--panel-line);background:rgba(6,8,16,0.6);backdrop-filter:blur(8px);flex:none}
+  header .accent{width:4px;height:34px;border-radius:3px;
+    background:linear-gradient(var(--cyan),var(--cyan-soft));box-shadow:0 0 14px rgba(95,211,224,.5)}
+  header h1{font-size:18px;font-weight:700;letter-spacing:.04em}
+  header .en{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.20em;margin-top:1px}
+  header .sys{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);
+    display:flex;align-items:center;gap:7px;letter-spacing:.08em}
+  header .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  header .unit{color:var(--cyan-soft)}
+
+  main{flex:1;display:grid;grid-template-columns:1fr 318px;min-height:0}
+  .stage{position:relative;min-height:0;overflow:hidden}
+  #cv{display:block;width:100%;height:100%;touch-action:none}
+  .hint{position:absolute;top:12px;left:14px;font-size:11px;line-height:1.7;color:var(--dim);
+    font-family:var(--mono);letter-spacing:.02em;pointer-events:none;
+    background:rgba(6,8,16,.4);padding:6px 9px;border-radius:8px;border:1px solid var(--panel-line)}
+  .hint b{color:var(--cyan-soft);font-weight:600}
+
+  .controls{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
+    padding:11px 16px;backdrop-filter:blur(10px);max-width:94%;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+  .seg{display:flex;background:rgba(0,0,0,.3);border-radius:10px;padding:3px;gap:3px}
+  .seg button{border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+    font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.18s}
+  .seg button.on{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;font-weight:700;box-shadow:0 0 12px rgba(95,211,224,.35)}
+  .sl{display:flex;align-items:center;gap:9px}
+  .sl.r2.hide{display:none}
+  .sl label{font-size:12px;color:var(--dim)}
+  .sl input[type=range]{-webkit-appearance:none;appearance:none;width:118px;height:4px;border-radius:3px;
+    background:linear-gradient(90deg,var(--cyan) 0%,var(--cyan) var(--p,0%),rgba(255,255,255,.14) var(--p,0%));outline:none;cursor:pointer}
+  .sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+  .sl input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;
+    background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+  .sl b{font-family:var(--mono);font-size:13px;color:var(--cyan-soft);min-width:48px;text-align:right}
+  .toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--dim);user-select:none}
+  .sw{width:38px;height:21px;border-radius:12px;background:rgba(255,255,255,.14);position:relative;transition:.2s}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#cfd6e6;transition:.2s}
+  .toggle.on .sw{background:var(--cyan)}
+  .toggle.on .sw::after{left:19px;background:#06222a}
+  .toggle.on{color:var(--text)}
+
+  aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);display:flex;flex-direction:column;min-height:0}
+  .tabbar{display:flex;border-bottom:1px solid var(--panel-line);flex:none}
+  .tabbar button{flex:1;border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+    font-size:13px;font-weight:500;padding:13px 0;cursor:pointer;position:relative;transition:.18s}
+  .tabbar button.on{color:var(--text)}
+  .tabbar button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:2px;
+    border-radius:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+  .panelbody{flex:1;overflow-y:auto;padding:16px}
+  .panelbody::-webkit-scrollbar{width:7px}.panelbody::-webkit-scrollbar-thumb{background:rgba(120,150,210,.25);border-radius:4px}
+
+  .meter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;margin-top:9px;
+    border:1px solid var(--panel-line);border-radius:11px;background:rgba(255,255,255,.02)}
+  .meter .k{font-size:12px;color:var(--dim);flex:none}
+  .meter .v{font-family:var(--mono);font-size:14px;color:var(--text);text-align:right}
+  .meter .v small{color:var(--dim);font-size:11px}
+  .meter .v.big{font-size:18px;color:var(--cyan-soft);font-weight:600}
+  .meter .v.amber{color:var(--amber-soft)}
+  .meter .v.jp{font-family:var(--jp);font-size:12.5px}
+  .sub2{font-size:11px;color:var(--dim);letter-spacing:.1em;margin:18px 0 4px;text-transform:uppercase}
+  .bulb-card{border:1px solid var(--panel-line);border-radius:11px;padding:12px;margin-top:9px;background:rgba(255,255,255,.02)}
+  .bulb-card .top{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:500;font-size:13px}
+  .bdot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#f5a623);box-shadow:0 0 8px var(--amber)}
+  .bvals{display:flex;gap:14px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .bvals b{color:var(--text);font-weight:600}
+  .bright-bar{height:6px;border-radius:4px;background:rgba(255,255,255,0.08);margin-top:9px;overflow:hidden}
+  .bright-bar i{display:block;height:100%;background:linear-gradient(90deg,#7a5a10,#ffce7a);transition:width .15s}
+  .ohm{margin-top:14px;border:1px dashed var(--panel-line);border-radius:11px;padding:14px;text-align:center;font-family:var(--mono)}
+  .ohm .eq{font-size:15px;color:var(--text)}
+  .ohm .eq span{color:var(--cyan-soft)}
+  .ohm .lab{font-size:10px;color:var(--dim);letter-spacing:.15em;margin-top:6px}
+
+  .ex h3{font-size:14px;color:var(--cyan-soft);margin:18px 0 10px}
+  .ex h3:first-child{margin-top:4px}
+  .ex p{font-size:13.5px;line-height:1.85;color:#c8d0e4;margin-bottom:10px}
+  .pt{display:flex;gap:9px;margin-bottom:13px;font-size:13.5px;line-height:1.72}
+  .pt::before{content:"●";color:var(--cyan);font-size:9px;margin-top:5px;flex:none}
+  .pt b{color:var(--cyan-soft);font-weight:700}
+
+  .quiz-q{font-size:14.5px;font-weight:500;line-height:1.7;margin-bottom:14px}
+  .quiz-q .num{font-family:var(--mono);color:var(--cyan-soft);margin-right:8px}
+  .quiz-prog{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:10px}
+  .quiz-opt{display:block;width:100%;text-align:left;border:1px solid var(--panel-line);background:rgba(255,255,255,.02);
+    color:var(--text);font-family:var(--jp);font-size:13.5px;padding:12px 14px;border-radius:11px;margin-bottom:9px;cursor:pointer;transition:.15s}
+  .quiz-opt:hover{border-color:rgba(120,150,210,.45);background:rgba(255,255,255,.05)}
+  .quiz-opt.ok{border-color:var(--good);background:rgba(95,224,154,.12);color:var(--good)}
+  .quiz-opt.ng{border-color:var(--bad);background:rgba(255,122,122,.12);color:var(--bad)}
+  .quiz-opt:disabled{cursor:default}
+  .quiz-fb{font-size:13px;line-height:1.7;margin-top:10px;padding:12px 14px;border-radius:11px;display:none}
+  .quiz-fb.show{display:block}
+  .quiz-fb.ok{background:rgba(95,224,154,.1);border:1px solid rgba(95,224,154,.3)}
+  .quiz-fb.ng{background:rgba(255,122,122,.1);border:1px solid rgba(255,122,122,.3)}
+  .quiz-fb .lab{font-weight:700;margin-right:6px}
+  .quiz-fb.ok .lab{color:var(--good)}.quiz-fb.ng .lab{color:var(--bad)}
+  .btn{border:1px solid var(--panel-line);background:rgba(255,255,255,.04);color:var(--text);font-family:var(--jp);
+    font-size:13px;font-weight:600;padding:11px 18px;border-radius:11px;cursor:pointer;margin-top:6px;transition:.15s}
+  .btn:hover{background:rgba(255,255,255,.09)}
+  .btn.primary{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;border:0;box-shadow:0 0 14px rgba(95,211,224,.3)}
+  .quiz-result{text-align:center;padding:18px 0}
+  .quiz-result .score{font-family:var(--mono);font-size:42px;font-weight:600;color:var(--cyan-soft)}
+  .quiz-result .lab{font-size:13px;color:var(--dim);margin:6px 0 18px}
+  .empty{color:var(--dim);font-size:13px;line-height:1.9;text-align:center;margin-top:40px}
+  .empty .big{font-size:34px;display:block;margin-bottom:10px}
+
+  .panel-toggle{display:none}
+  .panel-close{display:none}
+  @media(max-width:820px){
+    main{grid-template-columns:1fr}
+    aside{position:fixed;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+      transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+      background:rgba(8,11,20,.97);backdrop-filter:blur(12px)}
+    aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+    .panel-toggle{display:flex;position:absolute;top:12px;right:14px;z-index:20;align-items:center;gap:6px;
+      border:1px solid var(--panel-line);background:var(--panel);color:var(--text);font-family:var(--jp);
+      font-size:12px;font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+    .panel-close{display:block;position:absolute;top:10px;right:12px;z-index:5;border:0;background:rgba(255,255,255,.06);
+      color:var(--text);width:32px;height:32px;border-radius:9px;font-size:17px;cursor:pointer}
+    .hint{font-size:10px;top:auto;bottom:96px}
+    .controls{bottom:12px;gap:10px;padding:10px 12px}
+    .sl input[type=range]{width:92px}
+  }
+</style>
+
+<style id="manabi-responsive">
+/* ===== まなびラボ 表示強化（操作パネルを左サイドに縦配置 / 自動追加） ===== */
+.hint{transition:opacity .4s ease}
+.hint.is-hidden{opacity:0;pointer-events:none}
+
+/* 操作パネルを左サイドに縦並びで配置（中央のシミュレーションを隠さない） */
+.controls{
+  left:14px !important; right:auto !important; bottom:auto !important; top:50% !important;
+  transform:translateY(-50%) !important;
+  flex-direction:column !important; align-items:stretch !important; flex-wrap:nowrap !important;
+  gap:9px !important; width:min(214px,46vw) !important; max-width:214px !important;
+  max-height:calc(100% - 18px) !important; overflow-y:auto !important; overflow-x:hidden !important;
+  padding:12px !important;
+}
+.controls > button{width:100% !important; justify-content:center !important; white-space:nowrap !important}
+.controls .sl{width:100% !important; display:flex !important; align-items:center !important; gap:7px !important}
+.controls .sl label{flex:0 0 auto !important; white-space:nowrap !important}
+.controls .sl input[type=range]{flex:1 1 auto !important; width:auto !important; min-width:0 !important}
+.controls .sl b{flex:0 0 auto !important; white-space:nowrap !important; text-align:right !important}
+.controls .seg{width:100% !important; display:flex !important}
+.controls .seg button{flex:1 1 0 !important; padding:6px 4px !important; text-align:center !important}
+.controls .toggle{width:100% !important; display:flex !important; align-items:center !important; justify-content:space-between !important}
+
+/* 使い方ヒントは下中央へ（左の操作パネルと重ならないように） */
+.hint{left:50% !important; right:auto !important; top:auto !important; bottom:12px !important;
+  transform:translateX(-50%) !important; max-width:80vw !important; text-align:center !important}
+
+/* 横向きスマホなど高さが低い画面でも、右パネル(データ)は引き出し式に */
+@media (max-height:520px) and (max-width:1100px){
+  main{grid-template-columns:1fr !important}
+  aside{position:fixed !important;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);border-left:1px solid var(--panel-line)}
+  aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+  .panel-toggle{display:flex !important;position:absolute;top:10px;right:12px;z-index:20;
+    align-items:center;gap:6px;border:1px solid var(--panel-line);background:var(--panel);
+    color:var(--text);font-family:var(--jp);font-size:12px;font-weight:600;
+    padding:7px 12px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+  .panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
+    background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;
+    border-radius:9px;font-size:17px;cursor:pointer}
+  .controls{width:min(196px,52vw) !important;max-width:196px !important;
+    max-height:calc(100% - 14px) !important;padding:10px !important;gap:7px !important}
+}
+
+/* 縦向きスマホ：横向きをやさしく案内 */
+.rotate-tip{display:none}
+@media (max-width:820px) and (orientation:portrait){
+  .rotate-tip{display:flex;position:fixed;inset:0;z-index:90;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;padding:32px;text-align:center;
+    background:rgba(4,5,11,.94);backdrop-filter:blur(7px)}
+  .rotate-tip.is-hidden{display:none}
+  .rotate-tip .rt-ic{font-size:50px;animation:rt-turn 2.6s ease-in-out infinite;transform-origin:center}
+  @keyframes rt-turn{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(80deg)}}
+  .rotate-tip .rt-msg{font-size:16px;font-weight:700;line-height:1.7;color:var(--text)}
+  .rotate-tip .rt-sub{font-size:12px;color:var(--dim);margin-top:-6px}
+  .rotate-tip .rt-x{margin-top:4px;border:1px solid var(--panel-line);
+    background:rgba(255,255,255,.05);color:var(--text);font-family:var(--jp);
+    font-size:13px;font-weight:600;padding:11px 22px;border-radius:12px;cursor:pointer}
+}
+</style>
+<style>
+/* ===== まなびラボ 共通部品（縦パネル用ボタン・式・バー・表） ===== */
+.cbtn{border:1px solid var(--panel-line);background:rgba(255,255,255,.05);color:var(--text);
+  font-family:var(--jp);font-size:12.5px;font-weight:600;padding:9px 10px;border-radius:10px;cursor:pointer;transition:.15s}
+.cbtn:hover{background:rgba(255,255,255,.1)}
+.cbtn.warm{border-color:rgba(245,166,35,.45);color:var(--amber-soft);background:rgba(245,166,35,.08)}
+.formula{margin-top:14px;border:1px dashed var(--panel-line);border-radius:11px;padding:14px;text-align:center;font-family:var(--mono)}
+.formula .eq{font-size:15px;color:var(--text)}.formula .eq span{color:var(--cyan-soft)}
+.formula .eq b{color:var(--amber-soft);font-weight:600}
+.formula .lab{font-size:10px;color:var(--dim);letter-spacing:.15em;margin-top:6px}
+.vbar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:8px;overflow:hidden}
+.vbar i{display:block;height:100%;background:linear-gradient(90deg,#2a6b75,var(--cyan));transition:width .15s}
+.vbar i.am{background:linear-gradient(90deg,#7a5a10,var(--amber-soft))}
+table.vtab{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+.vtab th,.vtab td{border:1px solid var(--panel-line);padding:6px 4px;text-align:center;font-family:var(--mono);color:var(--text)}
+.vtab th{color:var(--dim);font-weight:500;font-size:11px;font-family:var(--jp)}
+.note{margin-top:12px;font-size:12px;color:var(--dim);line-height:1.8;border-left:2px solid var(--panel-line);padding-left:10px}
+.note b{color:var(--cyan-soft)}
+.sl.hide,.seg.hide,.toggle.hide,.cbtn.hide{display:none !important}
+</style>
+
+</head>
+<body>
+<header>
+  <div class="accent"></div>
+  <div>
+    <h1>溶解度と再結晶</h1>
+    <div class="en">SOLUBILITY</div>
+  </div>
+  <div class="sys"><span class="dot"></span>SYS ● ONLINE&nbsp;｜&nbsp;<span class="unit">水溶液</span></div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint"><b>水温</b>を下げると、とけきれない分が結晶になる<br>物質によって<b>溶解度曲線</b>の形がちがう</div>
+    <button class="panel-toggle" id="ptog">☰ データ</button>
+
+    <div class="controls">
+      <div class="seg" id="subSeg">
+        <button data-m="0" class="on">硝酸カリウム</button>
+        <button data-m="1">ミョウバン</button>
+      </div>
+      <div class="seg" id="subSeg2">
+        <button data-m="2">食塩</button>
+        <button data-m="3">ホウ酸</button>
+      </div>
+      <div class="sl"><label>水温</label><input type="range" id="tp" min="0" max="80" step="1" value="60"><b id="tpv">60 ℃</b></div>
+      <div class="sl"><label>とかす量</label><input type="range" id="amt" min="0" max="150" step="5" value="60"><b id="amtv">60 g</b></div>
+      <button class="cbtn" id="btnCool">❄ 20℃まで冷やす</button>
+    </div>
+  </div>
+
+  <aside id="aside">
+    <button class="panel-close" id="pclose">×</button>
+    <div class="tabbar">
+      <button data-tab="data" class="on">データ</button>
+      <button data-tab="ex">解説</button>
+      <button data-tab="quiz">クイズ</button>
+    </div>
+    <div class="panelbody" id="panelbody"></div>
+  </aside>
+</main>
+
+<script>
+/* ===== まなびラボ共通基盤（サイズ・ループ・パネル・クイズ・描画ヘルパ） ===== */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let DPR=1, cw=0, ch=0;
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);const r=cv.getBoundingClientRect();cw=r.width;ch=r.height;cv.width=Math.max(1,cw*DPR);cv.height=Math.max(1,ch*DPR);}
+window.addEventListener('resize',resize);
+let lastW=0,lastH=0;
+function resizeIfNeeded(){const r=cv.getBoundingClientRect();if(r.width!==lastW||r.height!==lastH){lastW=r.width;lastH=r.height;resize();}}
+
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const FJP=(s,w)=>`${w||400} ${s}px 'Zen Kaku Gothic New','Noto Sans CJK JP',sans-serif`;
+const FMO=(s,w)=>`${w||400} ${s}px 'JetBrains Mono','Noto Sans CJK JP',monospace`;
+function txt(t,x,y,o){o=o||{};ctx.save();ctx.font=o.mono?FMO(o.size||12,o.w):FJP(o.size||12,o.w);
+  ctx.fillStyle=o.color||'#e8ecf6';ctx.textAlign=o.align||'center';ctx.textBaseline=o.base||'middle';
+  if(o.alpha!=null)ctx.globalAlpha=o.alpha;ctx.fillText(t,x,y);ctx.restore();}
+function rrect(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function arrow(x1,y1,x2,y2,o){o=o||{};const col=o.color||'#5fd3e0',w=o.w||3,hs=o.head||9;
+  const a=Math.atan2(y2-y1,x2-x1),L=Math.hypot(x2-x1,y2-y1);if(L<0.6)return;
+  const bx=x2-Math.cos(a)*hs*0.8, by=y2-Math.sin(a)*hs*0.8;
+  ctx.save();ctx.lineCap='round';
+  if(!o.flat){ctx.strokeStyle='rgba(5,8,16,0.7)';ctx.lineWidth=w+2.6;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(bx,by);ctx.stroke();}
+  if(o.dash)ctx.setLineDash(o.dash);
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(bx,by);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=col;ctx.translate(x2,y2);ctx.rotate(a);
+  ctx.beginPath();ctx.moveTo(hs*0.4,0);ctx.lineTo(-hs,-hs*0.56);ctx.lineTo(-hs*0.62,0);ctx.lineTo(-hs,hs*0.56);ctx.closePath();ctx.fill();
+  ctx.restore();}
+
+/* 背景（既定：実験室風グリッド。単元側で差し替え可） */
+var drawBackdrop=function(){
+  let g=ctx.createLinearGradient(0,0,0,ch);
+  g.addColorStop(0,'#060911');g.addColorStop(0.55,'#04050b');g.addColorStop(1,'#070a13');
+  ctx.fillStyle=g;ctx.fillRect(0,0,cw,ch);
+  g=ctx.createRadialGradient(cw*0.58,ch*0.42,0,cw*0.58,ch*0.42,Math.max(cw,ch)*0.62);
+  g.addColorStop(0,'rgba(95,160,224,0.05)');g.addColorStop(1,'rgba(95,160,224,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,cw,ch);
+  ctx.fillStyle='rgba(140,170,230,0.05)';
+  for(let gx=18;gx<cw;gx+=26)for(let gy=18;gy<ch;gy+=26)ctx.fillRect(gx,gy,1.2,1.2);
+};
+
+/* ===== ループ（FIT写像つき） ===== */
+let VST={s:1,ox:0,oy:0};
+function ptrV(e){const r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left-VST.ox)/VST.s, y:(e.clientY-r.top-VST.oy)/VST.s};}
+let last=performance.now();
+function loop(t){
+  const dt=Math.min((t-last)/1000,0.05);last=t;
+  resizeIfNeeded();
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,cw,ch);
+  drawBackdrop(dt);
+  const FIT=getFIT();
+  const ctrls=document.querySelector('.controls');
+  const reserveW=(ctrls?ctrls.getBoundingClientRect().width:200)+28;
+  const availW=Math.max(150,cw-reserveW);
+  const s=Math.min(availW/FIT.w, ch/FIT.h);
+  const ox=reserveW+(availW-FIT.w*s)/2-FIT.x*s, oy=(ch-FIT.h*s)/2-FIT.y*s;
+  VST={s,ox,oy};
+  ctx.save();ctx.translate(ox,oy);ctx.scale(s,s);
+  drawSim(dt);
+  ctx.restore();
+  if(activeTab==='data')updateData();
+  requestAnimationFrame(loop);
+}
+
+/* ===== コントロール部品ヘルパ ===== */
+function trackP(el){const mn=+el.min,mx=+el.max;el.style.setProperty('--p',((el.value-mn)/(mx-mn)*100)+'%');}
+function bindSlider(id,fmt,fn){const el=document.getElementById(id),lb=document.getElementById(id+'v');
+  const f=()=>{const v=+el.value;if(lb)lb.textContent=fmt(v);trackP(el);fn(v);};
+  el.oninput=f;trackP(el);return el;}
+function bindToggle(id,fn){const el=document.getElementById(id);
+  el.onclick=()=>{el.classList.toggle('on');fn(el.classList.contains('on'));};return el;}
+function bindSeg(id,fn){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');fn(b.dataset.m);});}
+document.getElementById('ptog').onclick=()=>document.getElementById('aside').classList.add('open');
+document.getElementById('pclose').onclick=()=>document.getElementById('aside').classList.remove('open');
+
+/* ===== サイドパネル（タブ） ===== */
+let activeTab='data';
+document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>{
+  activeTab=b.dataset.tab;
+  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x.dataset.tab===activeTab));
+  renderPanel();document.getElementById('aside').classList.add('open');
+});
+function renderPanel(){
+  const body=document.getElementById('panelbody');
+  if(activeTab==='data')body.innerHTML=dataHTML();
+  else if(activeTab==='ex')body.innerHTML=exHTML();
+  else{body.innerHTML=quizHTML();bindQuiz();}
+}
+function setT(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function setW(id,pct){const el=document.getElementById(id);if(el)el.style.width=clamp(pct,0,100).toFixed(0)+'%';}
+
+/* ===== クイズ（QBANK と QUIZ_PERFECT は単元側で定義） ===== */
+let quiz=null;
+function newQuiz(){return {active:true,order:[...Array(QBANK.length).keys()].sort(()=>Math.random()-0.5).slice(0,6),idx:0,score:0,answered:null};}
+function quizHTML(){
+  if(!quiz||!quiz.active)return `<div class="empty"><span class="big">📝</span>このページのクイズに挑戦！<br>予想してから答えよう。<button class="btn primary" id="qstart" style="margin-top:14px">クイズを始める</button></div>`;
+  const Q=QBANK[quiz.order[quiz.idx]];
+  const opts=Q.o.map((o,i)=>{
+    let cls='quiz-opt';
+    if(quiz.answered!=null){if(i===Q.a)cls+=' ok';else if(i===quiz.answered)cls+=' ng';}
+    return `<button class="${cls}" data-i="${i}" ${quiz.answered!=null?'disabled':''}>${o}</button>`;
+  }).join('');
+  let fb='';
+  if(quiz.answered!=null){const ok=quiz.answered===Q.a;
+    fb=`<div class="quiz-fb show ${ok?'ok':'ng'}"><span class="lab">${ok?'正解':'おしい'}</span>${Q.e}</div>`;}
+  const next=quiz.answered!=null?`<button class="btn primary" id="qnext">${quiz.idx<quiz.order.length-1?'次の問題 →':'結果を見る'}</button>`:'';
+  return `<div class="quiz-prog">Q ${quiz.idx+1} / ${quiz.order.length} ・ SCORE ${quiz.score}</div>
+    <div class="quiz-q"><span class="num">Q${quiz.idx+1}</span>${Q.q}</div>${opts}${fb}${next}`;
+}
+function bindQuiz(){
+  const s=document.getElementById('qstart');if(s)s.onclick=()=>{quiz=newQuiz();renderPanel();};
+  document.querySelectorAll('.quiz-opt').forEach(b=>b.onclick=()=>{
+    if(quiz.answered!=null)return;quiz.answered=+b.dataset.i;
+    if(quiz.answered===QBANK[quiz.order[quiz.idx]].a)quiz.score++;renderPanel();
+  });
+  const n=document.getElementById('qnext');if(n)n.onclick=()=>{
+    if(quiz.idx<quiz.order.length-1){quiz.idx++;quiz.answered=null;renderPanel();}
+    else{
+      const sc=quiz.score,tot=quiz.order.length;
+      const msg=sc===tot?QUIZ_PERFECT:sc>=tot*0.6?'よくできました！':'解説タブを見て復習しよう。';
+      document.getElementById('panelbody').innerHTML=`<div class="quiz-result"><div class="score">${sc}/${tot}</div><div class="lab">${msg}</div><button class="btn primary" id="qretry">もう一度</button></div>`;
+      document.getElementById('qretry').onclick=()=>{quiz=newQuiz();renderPanel();};
+      quiz.active=false;
+    }
+  };
+}
+
+/* ================== ここから単元固有 ================== */
+/* ===== 溶解度と再結晶 ===== */
+const SUBS=[
+ {n:'硝酸カリウム',c:'#9ff0fb',d:[13.3,31.6,63.9,109.2,168.8]},
+ {n:'ミョウバン',  c:'#d6b2ff',d:[5.7,11.4,23.8,57.4,321.6]},
+ {n:'食塩',        c:'#ffce7a',d:[35.7,35.8,36.3,37.1,38.0]},
+ {n:'ホウ酸',      c:'#8fe6a8',d:[2.8,4.9,8.9,14.9,23.5]},
+];
+let sub=0, temp=60, amt=60, T=0, coolTo=null;
+function solOf(i,t){ // 区分線形補間（0/20/40/60/80℃）
+  t=clamp(t,0,80);
+  const d=SUBS[i].d, k=Math.min(3,Math.floor(t/20)), f=(t-k*20)/20;
+  return d[k]+(d[k+1]-d[k])*f;
+}
+function calc(){
+  const sol=solOf(sub,temp);
+  const dis=Math.min(amt,sol), cry=Math.max(0,amt-sol);
+  const conc=dis>0?dis/(100+dis)*100:0;
+  return {sol,dis,cry,conc,sat:amt>=sol-0.01&&amt>0};
+}
+function getFIT(){return {x:24,y:8,w:616,h:438};}
+
+/* --- ビーカー --- */
+function drawBeaker(){
+  const x=70,y=120,w=210,h=250, c=calc();
+  // 水（温度で色味が少し変わる）
+  const warm=temp/80;
+  const wg=ctx.createLinearGradient(0,y+34,0,y+h);
+  wg.addColorStop(0,`rgba(${95+warm*60|0},${180-warm*30|0},224,.18)`);
+  wg.addColorStop(1,`rgba(40,90,160,.36)`);
+  ctx.fillStyle=wg;ctx.fillRect(x+4,y+34,w-8,h-38);
+  ctx.strokeStyle='rgba(159,220,251,.7)';ctx.lineWidth=1.6;
+  ctx.beginPath();
+  for(let i=0;i<=w-8;i+=4){const yy=y+34+Math.sin(i/18+T*2)*1.3;i?ctx.lineTo(x+4+i,yy):ctx.moveTo(x+4+i,yy);}
+  ctx.stroke();
+  // ガラス
+  ctx.strokeStyle='rgba(200,220,250,.55)';ctx.lineWidth=2.6;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+h);
+  ctx.quadraticCurveTo(x,y+h+10,x+12,y+h+10);ctx.lineTo(x+w-12,y+h+10);
+  ctx.quadraticCurveTo(x+w,y+h+10,x+w,y+h);ctx.lineTo(x+w,y);ctx.stroke();
+  txt('水 100g',x+w-10,y+50,{size:10.5,color:'#9ff0fb',align:'right'});
+  // とけている粒子
+  const n=Math.round(c.dis/3.2), col=SUBS[sub].c;
+  ctx.fillStyle=col;
+  for(let i=0;i<n;i++){
+    const sx=(i*127%1000)/1000, sy=(i*311%1000)/1000, ph=(i*73%628)/100;
+    const px=x+16+sx*(w-32)+Math.sin(T*0.7+ph)*7;
+    const py=y+48+sy*(h-76)+Math.cos(T*0.55+ph*1.3)*6;
+    ctx.globalAlpha=0.75;
+    ctx.beginPath();ctx.arc(px,py,2.3,0,TAU);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 結晶（底にたまる）
+  if(c.cry>0.1){
+    const pw=clamp(c.cry,0,110);
+    const mh=10+pw*0.32;
+    const grd=ctx.createLinearGradient(0,y+h+8-mh,0,y+h+8);
+    grd.addColorStop(0,col);grd.addColorStop(1,'rgba(255,255,255,.25)');
+    ctx.fillStyle=grd;
+    ctx.beginPath();ctx.moveTo(x+18,y+h+6);
+    ctx.quadraticCurveTo(x+w/2,y+h+6-mh*2,x+w-18,y+h+6);ctx.closePath();
+    ctx.globalAlpha=0.85;ctx.fill();ctx.globalAlpha=1;
+    // キラ
+    ctx.fillStyle='#fff';
+    for(let i=0;i<Math.min(14,Math.round(c.cry/6));i++){
+      const px=x+34+(i*167%(w-68)), py=y+h-(i*53%Math.max(6,mh*1.2));
+      ctx.save();ctx.translate(px,py);ctx.rotate(i);
+      ctx.fillRect(-2.4,-0.7,4.8,1.4);ctx.fillRect(-0.7,-2.4,1.4,4.8);ctx.restore();
+    }
+    txt('結晶 '+c.cry.toFixed(1)+'g',x+w/2,y+h+26,{size:10.5,w:700,color:col});
+  }
+  // 温度計
+  const tx=x+w+26, ty=y+24, th=h-40;
+  ctx.fillStyle='rgba(255,255,255,.07)';rrect(ctx,tx-5,ty,10,th,5);ctx.fill();
+  const fy=ty+th-(temp/80)*(th-14);
+  const tg=ctx.createLinearGradient(0,fy,0,ty+th);
+  tg.addColorStop(0,'#ff8d7a');tg.addColorStop(1,'#c23b2e');
+  ctx.fillStyle=tg;rrect(ctx,tx-3,fy,6,ty+th-fy,3);ctx.fill();
+  ctx.beginPath();ctx.arc(tx,ty+th+6,8,0,TAU);ctx.fillStyle='#c23b2e';ctx.fill();
+  txt(temp.toFixed(0)+'℃',tx,ty-14,{size:12,w:700,color:'#ff9a8a',mono:true});
+  // 状態
+  const st=c.cry>0.1?'飽和（とけ残りあり）':c.sat?'ちょうど飽和':'まだとける（あと'+(c.sol-amt).toFixed(1)+'g）';
+  txt(st,x+w/2,96,{size:12.5,w:700,color:c.cry>0.1?'#ff9a8a':c.sat?'#ffce7a':'#5fe09a'});
+}
+
+/* --- 溶解度曲線 --- */
+function drawGraph(){
+  const gx=356,gy=64,gw=258,gh=300, YMAX=200;
+  const X=t=>gx+t/80*gw, Y=v=>gy+gh-clamp(v,0,YMAX)/YMAX*gh;
+  ctx.fillStyle='rgba(8,12,24,.55)';rrect(ctx,gx-6,gy-8,gw+14,gh+16,10);ctx.fill();
+  ctx.strokeStyle='rgba(120,150,210,.16)';ctx.lineWidth=1;
+  for(let v=0;v<=YMAX;v+=50){
+    ctx.beginPath();ctx.moveTo(gx,Y(v));ctx.lineTo(gx+gw,Y(v));ctx.stroke();
+    txt(v,gx-10,Y(v),{size:9,color:'#5d6a88',align:'right',mono:true});
+  }
+  for(let t=0;t<=80;t+=20){
+    ctx.beginPath();ctx.moveTo(X(t),gy);ctx.lineTo(X(t),gy+gh);ctx.stroke();
+    txt(t,X(t),gy+gh+12,{size:9,color:'#5d6a88',mono:true});
+  }
+  txt('水温[℃]',gx+gw,gy+gh+26,{size:9.5,color:'#8893ad',align:'right'});
+  txt('100gの水にとける量[g]',gx-2,gy-22,{size:9.5,color:'#8893ad',align:'left'});
+  // 曲線
+  ctx.save();ctx.beginPath();ctx.rect(gx-1,gy-1,gw+2,gh+2);ctx.clip();
+  SUBS.forEach((sd,i)=>{
+    const on=i===sub;
+    ctx.strokeStyle=sd.c;ctx.globalAlpha=on?1:0.22;ctx.lineWidth=on?2.6:1.4;
+    if(on){ctx.shadowColor=sd.c;ctx.shadowBlur=7;}else ctx.shadowBlur=0;
+    ctx.beginPath();
+    for(let t=0;t<=80;t+=1){const yy=Y(solOf(i,t));t?ctx.lineTo(X(t),yy):ctx.moveTo(X(t),yy);}
+    ctx.stroke();
+  });
+  ctx.restore();ctx.shadowBlur=0;ctx.globalAlpha=1;
+  if(SUBS[sub].d[4]>YMAX)txt('↑80℃では'+SUBS[sub].d[4].toFixed(0)+'gまで',gx+gw-4,gy+14,{size:9,color:SUBS[sub].c,align:'right'});
+  // とかした量の水平線
+  const c=calc();
+  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(245,166,35,.6)';ctx.lineWidth=1.3;
+  ctx.beginPath();ctx.moveTo(gx,Y(amt));ctx.lineTo(gx+gw,Y(amt));ctx.stroke();
+  // いまの温度の垂直線
+  ctx.strokeStyle='rgba(200,214,240,.4)';
+  ctx.beginPath();ctx.moveTo(X(temp),gy);ctx.lineTo(X(temp),gy+gh);ctx.stroke();
+  ctx.setLineDash([]);
+  txt('とかした量 '+amt+'g',gx+4,Y(amt)-9,{size:9.5,color:'#ffce7a',align:'left'});
+  // 現在点：とけている量
+  const py=Y(c.dis);
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(X(temp),py,4.6,0,TAU);ctx.fill();
+  ctx.strokeStyle=SUBS[sub].c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(temp),py,7.5,0,TAU);ctx.stroke();
+  if(c.cry>0.1){ // 結晶の量＝線と曲線の差
+    ctx.strokeStyle='#ff8d7a';ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.moveTo(X(temp),Y(amt));ctx.lineTo(X(temp),Y(c.sol));ctx.stroke();
+    txt('結晶'+c.cry.toFixed(0)+'g',X(temp)+8,(Y(amt)+Y(c.sol))/2,{size:9.5,w:700,color:'#ff8d7a',align:'left'});
+  }
+  txt('曲線より上にはみ出した分が結晶になる',gx+gw/2,gy+gh+40,{size:10,color:'#8893ad'});
+}
+function drawSim(dt){
+  T+=dt;
+  if(coolTo!=null){ // ❄ 冷やすアニメ
+    temp=Math.max(coolTo,temp-14*dt);
+    const el=document.getElementById('tp');el.value=temp;trackP(el);
+    document.getElementById('tpv').textContent=temp.toFixed(0)+' ℃';
+    if(temp<=coolTo)coolTo=null;
+  }
+  drawBeaker();
+  drawGraph();
+}
+
+/* ===== パネル ===== */
+function dataHTML(){
+  const c=calc();
+  return `<div class="meter"><span class="k">物質</span><span class="v jp amber" id="dN">${SUBS[sub].n}</span></div>
+  <div class="meter"><span class="k">水温</span><span class="v"><span id="dT">${temp}</span> <small>℃</small></span></div>
+  <div class="meter"><span class="k">溶解度（水100g）</span><span class="v big"><span id="dSol">0</span> <small>g</small></span></div>
+  <div class="meter"><span class="k">とかした量</span><span class="v"><span id="dA">0</span> <small>g</small></span></div>
+  <div class="meter"><span class="k">とけている量</span><span class="v" style="color:#9ff0fb"><span id="dDis">0</span> <small>g</small></span></div>
+  <div class="meter"><span class="k">結晶（とけ残り）</span><span class="v" style="color:#ff9a8a"><span id="dCry">0</span> <small>g</small></span></div>
+  <div class="meter"><span class="k">質量パーセント濃度</span><span class="v"><span id="dCon">0</span> <small>%</small></span></div>
+  <div class="formula"><div class="eq">濃度<span>[%]</span> ＝ 溶質 ÷ (水＋溶質) × 100</div>
+    <div class="lab">飽和水溶液の濃度は溶解度から計算できる</div></div>
+  <table class="vtab"><tr><th>℃</th><th>0</th><th>20</th><th>40</th><th>60</th><th>80</th></tr>
+  <tr><td style="font-family:var(--jp);font-size:10.5px" id="dRowN">${SUBS[sub].n}</td>${SUBS[sub].d.map(v=>`<td>${v}</td>`).join('')}</tr></table>`;
+}
+function updateData(){
+  if(!document.getElementById('dSol')){document.getElementById('panelbody').innerHTML=dataHTML();return;}
+  const c=calc();
+  setT('dN',SUBS[sub].n);setT('dT',temp.toFixed(0));setT('dSol',c.sol.toFixed(1));
+  setT('dA',amt);setT('dDis',c.dis.toFixed(1));setT('dCry',c.cry.toFixed(1));setT('dCon',c.conc.toFixed(1));
+}
+function exHTML(){
+  return `<div class="ex">
+  <h3>溶解度＝とける限界の量</h3>
+  <p><b>溶解度</b>は、水100gにとかすことのできる物質の最大の量[g]。限界までとけた水溶液を<b>飽和水溶液</b>といいます。</p>
+  <div class="pt">多くの固体は、水温が高いほど溶解度が<b>大きく</b>なる。</div>
+  <div class="pt"><b>食塩（塩化ナトリウム）</b>は例外的に、温度を変えても溶解度が<b>ほとんど変わらない</b>（曲線がほぼ水平）。</div>
+  <h3>再結晶：冷やして取り出す</h3>
+  <p>高い温度でたくさんとかしてから冷やすと、<b>とけきれなくなった分が結晶</b>になって出てきます。これが<b>再結晶</b>。純粋な物質を取り出す方法です。</p>
+  <div class="pt">出てくる結晶の量 ＝ とかした量 − その温度の溶解度（グラフの赤い線分）。</div>
+  <div class="pt">硝酸カリウムやミョウバンは曲線の傾きが大きいので<b>再結晶に向く</b>。</div>
+  <div class="pt">食塩は冷やしてもほとんど出てこないので、<b>水を蒸発させて</b>取り出す。</div>
+  <div class="note">60℃の水100gに硝酸カリウムを60gとかして「❄冷やす」を押すと、20℃（溶解度31.6g）では約<b>28.4g</b>の結晶が出ます。テストの計算と同じ流れです。</div>
+  </div>`;
+}
+const QUIZ_PERFECT='パーフェクト！水溶液マスター💠';
+const QBANK=[
+ {q:'水100gにとける物質の最大の量を何という？',o:['濃度','溶解度','密度'],a:1,e:'溶解度といい、ふつう水100gにとける限界のグラム数で表します。'},
+ {q:'限界までとけている水溶液を何という？',o:['飽和水溶液','濃縮水溶液','純粋な水溶液'],a:0,e:'それ以上とけない状態の水溶液を飽和水溶液といいます。'},
+ {q:'温度を下げて結晶を取り出す方法を何という？',o:['ろ過','蒸留','再結晶'],a:2,e:'溶解度の差を利用して結晶を取り出す方法が再結晶です。'},
+ {q:'冷やしてもほとんど結晶が出てこない物質は？',o:['硝酸カリウム','食塩','ミョウバン'],a:1,e:'食塩は温度による溶解度の変化がとても小さいので、冷やしても出てきません。'},
+ {q:'食塩水から食塩を取り出すのに適した方法は？',o:['冷やす','水を蒸発させる','かき混ぜる'],a:1,e:'溶解度がほぼ一定なので、水を蒸発させて取り出します。'},
+ {q:'60℃の水100gに硝酸カリウム60gをとかし20℃に冷やすと、出てくる結晶は約何g？（20℃の溶解度31.6g）',o:['約28g','約32g','約60g'],a:0,e:'60−31.6＝28.4g。とかした量から冷やした温度の溶解度を引きます。'},
+ {q:'水溶液の濃度（質量パーセント濃度）の式は？',o:['溶質÷水×100','溶質÷(水＋溶質)×100','水÷溶質×100'],a:1,e:'分母は水溶液全体（水＋溶質）です。まちがえやすいので注意！'},
+ {q:'飽和水溶液にさらに同じ物質を加えると？',o:['ぜんぶとける','とけずに残る','水溶液が増える'],a:1,e:'すでに限界までとけているので、加えた分はとけずに残ります。'},
+];
+
+/* ===== コントロール（物質segは2段ぶち抜き） ===== */
+function bindSub(){
+  document.querySelectorAll('#subSeg button,#subSeg2 button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#subSeg button,#subSeg2 button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');sub=+b.dataset.m;
+    if(activeTab!=='quiz')renderPanel();
+  });
+}
+bindSub();
+bindSlider('tp',v=>v.toFixed(0)+' ℃',v=>{temp=v;coolTo=null;});
+bindSlider('amt',v=>v+' g',v=>amt=v);
+document.getElementById('btnCool').onclick=()=>{coolTo=20;};
+
+/* ===== 起動 ===== */
+resize();renderPanel();requestAnimationFrame(loop);
+</script>
+
+<div class="rotate-tip" id="manabiRotate">
+  <div class="rt-ic">📱</div>
+  <div class="rt-msg">横向きにすると<br>見やすくなります</div>
+  <div class="rt-sub">スマホを横に回してください</div>
+  <button class="rt-x" id="manabiRotateX">このまま縦で使う</button>
+</div>
+<script>
+(function(){
+  "use strict";
+  var doc=document;
+  /* 1) canvasのサイズを常に親要素に合わせ続ける
+        （スマホのアドレスバー出入り・画面回転で高さが変わっても崩れないように） */
+  var cv=doc.getElementById('cv');
+  if(cv && cv.parentElement && typeof resize==='function'){
+    var lw=-1, lh=-1;
+    var tick=function(){
+      var r=cv.parentElement.getBoundingClientRect();
+      var w=Math.round(r.width), h=Math.round(r.height);
+      if(w>0 && h>0 && (w!==lw || h!==lh)){ lw=w; lh=h; try{ resize(); }catch(e){} }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  /* 2) 操作を始めたら左上のヒントをそっと消す（小さい画面で邪魔にならないように） */
+  var hint=doc.querySelector('.hint');
+  var stage=doc.querySelector('.stage');
+  if(hint && stage){
+    stage.addEventListener('pointerdown', function(){ hint.classList.add('is-hidden'); }, {once:true});
+  }
+  /* 3) 縦向き案内を閉じる */
+  var rx=doc.getElementById('manabiRotateX'), rt=doc.getElementById('manabiRotate');
+  if(rx && rt){ rx.addEventListener('click', function(){ rt.classList.add('is-hidden'); }); }
+})();
+</script>
+</body>
+</html>
