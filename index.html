@@ -55,7 +55,7 @@
   .st{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:3px 9px;border-radius:20px}
   .st.on{color:var(--good);border:1px solid rgba(95,224,154,.35);background:rgba(95,224,154,.08)}
   .st.off{color:var(--dim);border:1px solid var(--line)}
-  .go{position:absolute;right:18px;top:18px;font-size:13px;color:var(--acc);opacity:0;transform:translateX(-6px);transition:.22s}
+  .go{position:absolute;right:18px;bottom:18px;font-size:13px;color:var(--acc);opacity:0;transform:translateX(-6px);transition:.22s}
   .card.live:hover .go{opacity:1;transform:none}
 
   footer{margin-top:54px;text-align:center;font-size:12px;color:var(--dim);line-height:1.9}
@@ -71,7 +71,7 @@
   </header>
 
   <section class="sec">
-    <div class="sec-h"><h2>理科</h2><span class="en">SCIENCE</span><span class="count">6 / 7 公開</span></div>
+    <div class="sec-h"><h2>理科</h2><span class="en">SCIENCE</span><span class="count">7 / 14 公開</span></div>
     <div class="grid">
 
       <a class="card live" href="solar.html" style="--acc:var(--amber)">
@@ -122,40 +122,93 @@
         <span class="go">ひらく →</span>
       </a>
 
-      <div class="card soon" style="--acc:#9aa6c4">
+      <a class="card live" href="particle.html" style="--acc:#9aa6c4">
         <div class="ic">💧</div>
         <h3>状態変化の粒子</h3><div class="ten">PARTICLES ｜ 化学</div>
         <p>加熱で粒子の動きが激しくなり固体→液体→気体へ。温度グラフの平らな部分も連動。</p>
+        <div class="meta"><span class="tag">中学理科・化学</span><span class="st on">● 公開中</span></div>
+        <span class="go">ひらく →</span>
+      </a>
+
+      <div class="card soon" style="--acc:#f5a623">
+        <div class="ic">🎢</div>
+        <h3>力学的エネルギー</h3><div class="ten">ENERGY ｜ 物理</div>
+        <p>コースターや振り子を動かすと位置エネルギーと運動エネルギーが入れかわる。合計は一定、が棒グラフで見える。</p>
+        <div class="meta"><span class="tag">中学理科・物理</span><span class="st off">準備中</span></div>
+      </div>
+
+      <div class="card soon" style="--acc:#b58cff">
+        <div class="ic">🧭</div>
+        <h3>力の合成と分解</h3><div class="ten">FORCE VECTORS ｜ 物理</div>
+        <p>矢印（力）をドラッグすると合力・分力が変化。平行四辺形の法則を手で動かしてつかむ。</p>
+        <div class="meta"><span class="tag">中学理科・物理</span><span class="st off">準備中</span></div>
+      </div>
+
+      <div class="card soon" style="--acc:#7ee0c4">
+        <div class="ic">🔊</div>
+        <h3>音のせいしつ</h3><div class="ten">SOUND ｜ 物理</div>
+        <p>振動数・振幅をいじると波形と音の高さ・大きさが変わる。見えない音を波形と実音で見せる。</p>
+        <div class="meta"><span class="tag">中学理科・物理</span><span class="st off">準備中</span></div>
+      </div>
+
+      <div class="card soon" style="--acc:#5fd3e0">
+        <div class="ic">🛟</div>
+        <h3>圧力と浮力</h3><div class="ten">PRESSURE ｜ 物理</div>
+        <p>物体を深く沈めると水圧の矢印が伸び、浮力と重力で浮く・沈むが決まる。密度を変えても連動。</p>
+        <div class="meta"><span class="tag">中学理科・物理</span><span class="st off">準備中</span></div>
+      </div>
+
+      <div class="card soon" style="--acc:#8fb8e6">
+        <div class="ic">💠</div>
+        <h3>溶解度と再結晶</h3><div class="ten">SOLUBILITY ｜ 化学</div>
+        <p>水温を上げ下げすると溶ける粒子の数が変化。冷やすと結晶が出てくる再結晶のしくみ。</p>
         <div class="meta"><span class="tag">中学理科・化学</span><span class="st off">準備中</span></div>
+      </div>
+
+      <div class="card soon" style="--acc:#e0795f">
+        <div class="ic">📳</div>
+        <h3>地震のゆれ</h3><div class="ten">SEISMIC WAVES ｜ 地学</div>
+        <p>震源から伝わるP波・S波を可視化。震源距離と初期微動継続時間の関係が動いて見える。</p>
+        <div class="meta"><span class="tag">中学理科・地学</span><span class="st off">準備中</span></div>
+      </div>
+
+      <div class="card soon" style="--acc:#ffce5c">
+        <div class="ic">☀️</div>
+        <h3>太陽の動き</h3><div class="ten">SUN PATH ｜ 地学</div>
+        <p>緯度や季節を動かすと太陽の通り道と南中高度が変わる。日の出・日の入りの位置までつながる。</p>
+        <div class="meta"><span class="tag">中学理科・地学</span><span class="st off">準備中</span></div>
       </div>
 
     </div>
   </section>
 
   <section class="sec">
-    <div class="sec-h"><h2>数学</h2><span class="en">MATH</span><span class="count">0 / 3 公開</span></div>
+    <div class="sec-h"><h2>数学</h2><span class="en">MATH</span><span class="count">3 / 3 公開</span></div>
     <div class="grid">
 
-      <div class="card soon" style="--acc:var(--cyan)">
+      <a class="card live" href="number.html" style="--acc:var(--cyan)">
         <div class="ic">🔢</div>
         <h3>数の世界</h3><div class="ten">NUMBERS ｜ 数の感覚</div>
         <p>整数・負の数・分数・小数・平方根を1本の数直線と面積モデルで。数の大きさを直感で。</p>
-        <div class="meta"><span class="tag">数直線・分数・平方根</span><span class="st off">準備中</span></div>
-      </div>
+        <div class="meta"><span class="tag">数直線・分数・平方根</span><span class="st on">● 公開中</span></div>
+        <span class="go">ひらく →</span>
+      </a>
 
-      <div class="card soon" style="--acc:var(--amber)">
+      <a class="card live" href="balance.html" style="--acc:var(--amber)">
         <div class="ic">⚖️</div>
         <h3>方程式の天秤</h3><div class="ten">EQUATION BALANCE ｜ 文字と式</div>
         <p>方程式を天秤で表現。両辺に同じ操作をして x を求める。なぜそう解くのかが見える。</p>
-        <div class="meta"><span class="tag">方程式・x</span><span class="st off">準備中</span></div>
-      </div>
+        <div class="meta"><span class="tag">方程式・x</span><span class="st on">● 公開中</span></div>
+        <span class="go">ひらく →</span>
+      </a>
 
-      <div class="card soon" style="--acc:#b48cff">
+      <a class="card live" href="graph.html" style="--acc:#b48cff">
         <div class="ic">📈</div>
         <h3>関数グラフ</h3><div class="ten">FUNCTIONS ｜ x と y</div>
         <p>式・表・グラフを連動表示。スライダーで一次関数や放物線が動き、二次方程式の解も見える。</p>
-        <div class="meta"><span class="tag">一次・二次関数</span><span class="st off">準備中</span></div>
-      </div>
+        <div class="meta"><span class="tag">一次・二次関数</span><span class="st on">● 公開中</span></div>
+        <span class="go">ひらく →</span>
+      </a>
 
     </div>
   </section>
