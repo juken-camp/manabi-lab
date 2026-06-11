@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>地震のゆれシミュレーター｜理科教材</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#04050b;--panel:rgba(14,18,32,0.85);--panel-line:rgba(120,150,210,0.18);
+    --amber:#f5a623;--amber-soft:#ffce7a;--cyan:#5fd3e0;--cyan-soft:#9ff0fb;--text:#e8ecf6;--dim:#8893ad;
+    --good:#5fe09a;--bad:#ff7a7a;
+    --jp:'Zen Kaku Gothic New',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden}
+  body{background:
+    radial-gradient(1100px 700px at 22% -10%, rgba(95,211,224,0.10), transparent 60%),
+    radial-gradient(900px 800px at 110% 120%, rgba(245,166,35,0.07), transparent 55%),var(--bg);
+    color:var(--text);font-family:var(--jp);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+  header{display:flex;align-items:center;gap:14px;padding:11px 18px;
+    border-bottom:1px solid var(--panel-line);background:rgba(6,8,16,0.6);backdrop-filter:blur(8px);flex:none}
+  header .accent{width:4px;height:34px;border-radius:3px;
+    background:linear-gradient(var(--cyan),var(--cyan-soft));box-shadow:0 0 14px rgba(95,211,224,.5)}
+  header h1{font-size:18px;font-weight:700;letter-spacing:.04em}
+  header .en{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.20em;margin-top:1px}
+  header .sys{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--dim);
+    display:flex;align-items:center;gap:7px;letter-spacing:.08em}
+  header .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  header .unit{color:var(--cyan-soft)}
+
+  main{flex:1;display:grid;grid-template-columns:1fr 318px;min-height:0}
+  .stage{position:relative;min-height:0;overflow:hidden}
+  #cv{display:block;width:100%;height:100%;touch-action:none}
+  .hint{position:absolute;top:12px;left:14px;font-size:11px;line-height:1.7;color:var(--dim);
+    font-family:var(--mono);letter-spacing:.02em;pointer-events:none;
+    background:rgba(6,8,16,.4);padding:6px 9px;border-radius:8px;border:1px solid var(--panel-line)}
+  .hint b{color:var(--cyan-soft);font-weight:600}
+
+  .controls{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;
+    background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
+    padding:11px 16px;backdrop-filter:blur(10px);max-width:94%;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+  .seg{display:flex;background:rgba(0,0,0,.3);border-radius:10px;padding:3px;gap:3px}
+  .seg button{border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+    font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.18s}
+  .seg button.on{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;font-weight:700;box-shadow:0 0 12px rgba(95,211,224,.35)}
+  .sl{display:flex;align-items:center;gap:9px}
+  .sl.r2.hide{display:none}
+  .sl label{font-size:12px;color:var(--dim)}
+  .sl input[type=range]{-webkit-appearance:none;appearance:none;width:118px;height:4px;border-radius:3px;
+    background:linear-gradient(90deg,var(--cyan) 0%,var(--cyan) var(--p,0%),rgba(255,255,255,.14) var(--p,0%));outline:none;cursor:pointer}
+  .sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+  .sl input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;
+    background:var(--cyan-soft);box-shadow:0 0 10px rgba(95,211,224,.7);cursor:pointer}
+  .sl b{font-family:var(--mono);font-size:13px;color:var(--cyan-soft);min-width:48px;text-align:right}
+  .toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--dim);user-select:none}
+  .sw{width:38px;height:21px;border-radius:12px;background:rgba(255,255,255,.14);position:relative;transition:.2s}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#cfd6e6;transition:.2s}
+  .toggle.on .sw{background:var(--cyan)}
+  .toggle.on .sw::after{left:19px;background:#06222a}
+  .toggle.on{color:var(--text)}
+
+  aside{border-left:1px solid var(--panel-line);background:rgba(8,11,20,.55);display:flex;flex-direction:column;min-height:0}
+  .tabbar{display:flex;border-bottom:1px solid var(--panel-line);flex:none}
+  .tabbar button{flex:1;border:0;background:transparent;color:var(--dim);font-family:var(--jp);
+    font-size:13px;font-weight:500;padding:13px 0;cursor:pointer;position:relative;transition:.18s}
+  .tabbar button.on{color:var(--text)}
+  .tabbar button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:2px;
+    border-radius:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+  .panelbody{flex:1;overflow-y:auto;padding:16px}
+  .panelbody::-webkit-scrollbar{width:7px}.panelbody::-webkit-scrollbar-thumb{background:rgba(120,150,210,.25);border-radius:4px}
+
+  .meter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;margin-top:9px;
+    border:1px solid var(--panel-line);border-radius:11px;background:rgba(255,255,255,.02)}
+  .meter .k{font-size:12px;color:var(--dim);flex:none}
+  .meter .v{font-family:var(--mono);font-size:14px;color:var(--text);text-align:right}
+  .meter .v small{color:var(--dim);font-size:11px}
+  .meter .v.big{font-size:18px;color:var(--cyan-soft);font-weight:600}
+  .meter .v.amber{color:var(--amber-soft)}
+  .meter .v.jp{font-family:var(--jp);font-size:12.5px}
+  .sub2{font-size:11px;color:var(--dim);letter-spacing:.1em;margin:18px 0 4px;text-transform:uppercase}
+  .bulb-card{border:1px solid var(--panel-line);border-radius:11px;padding:12px;margin-top:9px;background:rgba(255,255,255,.02)}
+  .bulb-card .top{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:500;font-size:13px}
+  .bdot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#f5a623);box-shadow:0 0 8px var(--amber)}
+  .bvals{display:flex;gap:14px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .bvals b{color:var(--text);font-weight:600}
+  .bright-bar{height:6px;border-radius:4px;background:rgba(255,255,255,0.08);margin-top:9px;overflow:hidden}
+  .bright-bar i{display:block;height:100%;background:linear-gradient(90deg,#7a5a10,#ffce7a);transition:width .15s}
+  .ohm{margin-top:14px;border:1px dashed var(--panel-line);border-radius:11px;padding:14px;text-align:center;font-family:var(--mono)}
+  .ohm .eq{font-size:15px;color:var(--text)}
+  .ohm .eq span{color:var(--cyan-soft)}
+  .ohm .lab{font-size:10px;color:var(--dim);letter-spacing:.15em;margin-top:6px}
+
+  .ex h3{font-size:14px;color:var(--cyan-soft);margin:18px 0 10px}
+  .ex h3:first-child{margin-top:4px}
+  .ex p{font-size:13.5px;line-height:1.85;color:#c8d0e4;margin-bottom:10px}
+  .pt{display:flex;gap:9px;margin-bottom:13px;font-size:13.5px;line-height:1.72}
+  .pt::before{content:"●";color:var(--cyan);font-size:9px;margin-top:5px;flex:none}
+  .pt b{color:var(--cyan-soft);font-weight:700}
+
+  .quiz-q{font-size:14.5px;font-weight:500;line-height:1.7;margin-bottom:14px}
+  .quiz-q .num{font-family:var(--mono);color:var(--cyan-soft);margin-right:8px}
+  .quiz-prog{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.1em;margin-bottom:10px}
+  .quiz-opt{display:block;width:100%;text-align:left;border:1px solid var(--panel-line);background:rgba(255,255,255,.02);
+    color:var(--text);font-family:var(--jp);font-size:13.5px;padding:12px 14px;border-radius:11px;margin-bottom:9px;cursor:pointer;transition:.15s}
+  .quiz-opt:hover{border-color:rgba(120,150,210,.45);background:rgba(255,255,255,.05)}
+  .quiz-opt.ok{border-color:var(--good);background:rgba(95,224,154,.12);color:var(--good)}
+  .quiz-opt.ng{border-color:var(--bad);background:rgba(255,122,122,.12);color:var(--bad)}
+  .quiz-opt:disabled{cursor:default}
+  .quiz-fb{font-size:13px;line-height:1.7;margin-top:10px;padding:12px 14px;border-radius:11px;display:none}
+  .quiz-fb.show{display:block}
+  .quiz-fb.ok{background:rgba(95,224,154,.1);border:1px solid rgba(95,224,154,.3)}
+  .quiz-fb.ng{background:rgba(255,122,122,.1);border:1px solid rgba(255,122,122,.3)}
+  .quiz-fb .lab{font-weight:700;margin-right:6px}
+  .quiz-fb.ok .lab{color:var(--good)}.quiz-fb.ng .lab{color:var(--bad)}
+  .btn{border:1px solid var(--panel-line);background:rgba(255,255,255,.04);color:var(--text);font-family:var(--jp);
+    font-size:13px;font-weight:600;padding:11px 18px;border-radius:11px;cursor:pointer;margin-top:6px;transition:.15s}
+  .btn:hover{background:rgba(255,255,255,.09)}
+  .btn.primary{background:linear-gradient(var(--cyan),#3fb6c6);color:#06222a;border:0;box-shadow:0 0 14px rgba(95,211,224,.3)}
+  .quiz-result{text-align:center;padding:18px 0}
+  .quiz-result .score{font-family:var(--mono);font-size:42px;font-weight:600;color:var(--cyan-soft)}
+  .quiz-result .lab{font-size:13px;color:var(--dim);margin:6px 0 18px}
+  .empty{color:var(--dim);font-size:13px;line-height:1.9;text-align:center;margin-top:40px}
+  .empty .big{font-size:34px;display:block;margin-bottom:10px}
+
+  .panel-toggle{display:none}
+  .panel-close{display:none}
+  @media(max-width:820px){
+    main{grid-template-columns:1fr}
+    aside{position:fixed;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+      transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+      background:rgba(8,11,20,.97);backdrop-filter:blur(12px)}
+    aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+    .panel-toggle{display:flex;position:absolute;top:12px;right:14px;z-index:20;align-items:center;gap:6px;
+      border:1px solid var(--panel-line);background:var(--panel);color:var(--text);font-family:var(--jp);
+      font-size:12px;font-weight:600;padding:8px 13px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+    .panel-close{display:block;position:absolute;top:10px;right:12px;z-index:5;border:0;background:rgba(255,255,255,.06);
+      color:var(--text);width:32px;height:32px;border-radius:9px;font-size:17px;cursor:pointer}
+    .hint{font-size:10px;top:auto;bottom:96px}
+    .controls{bottom:12px;gap:10px;padding:10px 12px}
+    .sl input[type=range]{width:92px}
+  }
+</style>
+
+<style id="manabi-responsive">
+/* ===== まなびラボ 表示強化（操作パネルを左サイドに縦配置 / 自動追加） ===== */
+.hint{transition:opacity .4s ease}
+.hint.is-hidden{opacity:0;pointer-events:none}
+
+/* 操作パネルを左サイドに縦並びで配置（中央のシミュレーションを隠さない） */
+.controls{
+  left:14px !important; right:auto !important; bottom:auto !important; top:50% !important;
+  transform:translateY(-50%) !important;
+  flex-direction:column !important; align-items:stretch !important; flex-wrap:nowrap !important;
+  gap:9px !important; width:min(214px,46vw) !important; max-width:214px !important;
+  max-height:calc(100% - 18px) !important; overflow-y:auto !important; overflow-x:hidden !important;
+  padding:12px !important;
+}
+.controls > button{width:100% !important; justify-content:center !important; white-space:nowrap !important}
+.controls .sl{width:100% !important; display:flex !important; align-items:center !important; gap:7px !important}
+.controls .sl label{flex:0 0 auto !important; white-space:nowrap !important}
+.controls .sl input[type=range]{flex:1 1 auto !important; width:auto !important; min-width:0 !important}
+.controls .sl b{flex:0 0 auto !important; white-space:nowrap !important; text-align:right !important}
+.controls .seg{width:100% !important; display:flex !important}
+.controls .seg button{flex:1 1 0 !important; padding:6px 4px !important; text-align:center !important}
+.controls .toggle{width:100% !important; display:flex !important; align-items:center !important; justify-content:space-between !important}
+
+/* 使い方ヒントは下中央へ（左の操作パネルと重ならないように） */
+.hint{left:50% !important; right:auto !important; top:auto !important; bottom:12px !important;
+  transform:translateX(-50%) !important; max-width:80vw !important; text-align:center !important}
+
+/* 横向きスマホなど高さが低い画面でも、右パネル(データ)は引き出し式に */
+@media (max-height:520px) and (max-width:1100px){
+  main{grid-template-columns:1fr !important}
+  aside{position:fixed !important;top:0;right:0;width:min(330px,86vw);height:100%;z-index:30;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    background:rgba(8,11,20,.97);backdrop-filter:blur(12px);border-left:1px solid var(--panel-line)}
+  aside.open{transform:translateX(0);box-shadow:-20px 0 60px rgba(0,0,0,.6)}
+  .panel-toggle{display:flex !important;position:absolute;top:10px;right:12px;z-index:20;
+    align-items:center;gap:6px;border:1px solid var(--panel-line);background:var(--panel);
+    color:var(--text);font-family:var(--jp);font-size:12px;font-weight:600;
+    padding:7px 12px;border-radius:11px;cursor:pointer;backdrop-filter:blur(8px)}
+  .panel-close{display:block !important;position:absolute;top:10px;right:12px;z-index:5;border:0;
+    background:rgba(255,255,255,.06);color:var(--text);width:32px;height:32px;
+    border-radius:9px;font-size:17px;cursor:pointer}
+  .controls{width:min(196px,52vw) !important;max-width:196px !important;
+    max-height:calc(100% - 14px) !important;padding:10px !important;gap:7px !important}
+}
+
+/* 縦向きスマホ：横向きをやさしく案内 */
+.rotate-tip{display:none}
+@media (max-width:820px) and (orientation:portrait){
+  .rotate-tip{display:flex;position:fixed;inset:0;z-index:90;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;padding:32px;text-align:center;
+    background:rgba(4,5,11,.94);backdrop-filter:blur(7px)}
+  .rotate-tip.is-hidden{display:none}
+  .rotate-tip .rt-ic{font-size:50px;animation:rt-turn 2.6s ease-in-out infinite;transform-origin:center}
+  @keyframes rt-turn{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(80deg)}}
+  .rotate-tip .rt-msg{font-size:16px;font-weight:700;line-height:1.7;color:var(--text)}
+  .rotate-tip .rt-sub{font-size:12px;color:var(--dim);margin-top:-6px}
+  .rotate-tip .rt-x{margin-top:4px;border:1px solid var(--panel-line);
+    background:rgba(255,255,255,.05);color:var(--text);font-family:var(--jp);
+    font-size:13px;font-weight:600;padding:11px 22px;border-radius:12px;cursor:pointer}
+}
+</style>
+<style>
+/* ===== まなびラボ 共通部品（縦パネル用ボタン・式・バー・表） ===== */
+.cbtn{border:1px solid var(--panel-line);background:rgba(255,255,255,.05);color:var(--text);
+  font-family:var(--jp);font-size:12.5px;font-weight:600;padding:9px 10px;border-radius:10px;cursor:pointer;transition:.15s}
+.cbtn:hover{background:rgba(255,255,255,.1)}
+.cbtn.warm{border-color:rgba(245,166,35,.45);color:var(--amber-soft);background:rgba(245,166,35,.08)}
+.formula{margin-top:14px;border:1px dashed var(--panel-line);border-radius:11px;padding:14px;text-align:center;font-family:var(--mono)}
+.formula .eq{font-size:15px;color:var(--text)}.formula .eq span{color:var(--cyan-soft)}
+.formula .eq b{color:var(--amber-soft);font-weight:600}
+.formula .lab{font-size:10px;color:var(--dim);letter-spacing:.15em;margin-top:6px}
+.vbar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:8px;overflow:hidden}
+.vbar i{display:block;height:100%;background:linear-gradient(90deg,#2a6b75,var(--cyan));transition:width .15s}
+.vbar i.am{background:linear-gradient(90deg,#7a5a10,var(--amber-soft))}
+table.vtab{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+.vtab th,.vtab td{border:1px solid var(--panel-line);padding:6px 4px;text-align:center;font-family:var(--mono);color:var(--text)}
+.vtab th{color:var(--dim);font-weight:500;font-size:11px;font-family:var(--jp)}
+.note{margin-top:12px;font-size:12px;color:var(--dim);line-height:1.8;border-left:2px solid var(--panel-line);padding-left:10px}
+.note b{color:var(--cyan-soft)}
+.sl.hide,.seg.hide,.toggle.hide,.cbtn.hide{display:none !important}
+</style>
+
+</head>
+<body>
+<header>
+  <div class="accent"></div>
+  <div>
+    <h1>地震のゆれ</h1>
+    <div class="en">SEISMIC WAVES</div>
+  </div>
+  <div class="sys"><span class="dot"></span>SYS ● ONLINE&nbsp;｜&nbsp;<span class="unit">大地の変化</span></div>
+</header>
+
+<main>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hint"><b>P波</b>が先に届いて初期微動、<b>S波</b>で主要動<br><b>距離</b>を変えると初期微動継続時間が変わる</div>
+    <button class="panel-toggle" id="ptog">☰ データ</button>
+
+    <div class="controls">
+      <div class="seg" id="modeSeg">
+        <button data-m="map" class="on">マップ</button>
+        <button data-m="graph">距離と時間</button>
+      </div>
+      <div class="sl"><label>観測点まで</label><input type="range" id="dist" min="20" max="120" step="5" value="60"><b id="distv">60 km</b></div>
+      <div class="sl"><label>P波の速さ</label><input type="range" id="vp" min="5" max="8" step="0.5" value="7"><b id="vpv">7.0 km/s</b></div>
+      <div class="sl"><label>S波の速さ</label><input type="range" id="vs" min="2.5" max="4.5" step="0.5" value="3.5"><b id="vsv">3.5 km/s</b></div>
+      <div class="toggle on cmap" id="tgPlay"><span>ゆれを再生</span><span class="sw"></span></div>
+      <button class="cbtn warm cmap" id="btnGo">⚡ 地震発生（はじめから）</button>
+    </div>
+  </div>
+
+  <aside id="aside">
+    <button class="panel-close" id="pclose">×</button>
+    <div class="tabbar">
+      <button data-tab="data" class="on">データ</button>
+      <button data-tab="ex">解説</button>
+      <button data-tab="quiz">クイズ</button>
+    </div>
+    <div class="panelbody" id="panelbody"></div>
+  </aside>
+</main>
+
+<script>
+/* ===== まなびラボ共通基盤（サイズ・ループ・パネル・クイズ・描画ヘルパ） ===== */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let DPR=1, cw=0, ch=0;
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);const r=cv.getBoundingClientRect();cw=r.width;ch=r.height;cv.width=Math.max(1,cw*DPR);cv.height=Math.max(1,ch*DPR);}
+window.addEventListener('resize',resize);
+let lastW=0,lastH=0;
+function resizeIfNeeded(){const r=cv.getBoundingClientRect();if(r.width!==lastW||r.height!==lastH){lastW=r.width;lastH=r.height;resize();}}
+
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const FJP=(s,w)=>`${w||400} ${s}px 'Zen Kaku Gothic New','Noto Sans CJK JP',sans-serif`;
+const FMO=(s,w)=>`${w||400} ${s}px 'JetBrains Mono','Noto Sans CJK JP',monospace`;
+function txt(t,x,y,o){o=o||{};ctx.save();ctx.font=o.mono?FMO(o.size||12,o.w):FJP(o.size||12,o.w);
+  ctx.fillStyle=o.color||'#e8ecf6';ctx.textAlign=o.align||'center';ctx.textBaseline=o.base||'middle';
+  if(o.alpha!=null)ctx.globalAlpha=o.alpha;ctx.fillText(t,x,y);ctx.restore();}
+function rrect(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function arrow(x1,y1,x2,y2,o){o=o||{};const col=o.color||'#5fd3e0',w=o.w||3,hs=o.head||9;
+  const a=Math.atan2(y2-y1,x2-x1),L=Math.hypot(x2-x1,y2-y1);if(L<0.6)return;
+  const bx=x2-Math.cos(a)*hs*0.8, by=y2-Math.sin(a)*hs*0.8;
+  ctx.save();ctx.lineCap='round';
+  if(!o.flat){ctx.strokeStyle='rgba(5,8,16,0.7)';ctx.lineWidth=w+2.6;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(bx,by);ctx.stroke();}
+  if(o.dash)ctx.setLineDash(o.dash);
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(bx,by);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=col;ctx.translate(x2,y2);ctx.rotate(a);
+  ctx.beginPath();ctx.moveTo(hs*0.4,0);ctx.lineTo(-hs,-hs*0.56);ctx.lineTo(-hs*0.62,0);ctx.lineTo(-hs,hs*0.56);ctx.closePath();ctx.fill();
+  ctx.restore();}
+
+/* 背景（既定：実験室風グリッド。単元側で差し替え可） */
+var drawBackdrop=function(){
+  let g=ctx.createLinearGradient(0,0,0,ch);
+  g.addColorStop(0,'#060911');g.addColorStop(0.55,'#04050b');g.addColorStop(1,'#070a13');
+  ctx.fillStyle=g;ctx.fillRect(0,0,cw,ch);
+  g=ctx.createRadialGradient(cw*0.58,ch*0.42,0,cw*0.58,ch*0.42,Math.max(cw,ch)*0.62);
+  g.addColorStop(0,'rgba(95,160,224,0.05)');g.addColorStop(1,'rgba(95,160,224,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,cw,ch);
+  ctx.fillStyle='rgba(140,170,230,0.05)';
+  for(let gx=18;gx<cw;gx+=26)for(let gy=18;gy<ch;gy+=26)ctx.fillRect(gx,gy,1.2,1.2);
+};
+
+/* ===== ループ（FIT写像つき） ===== */
+let VST={s:1,ox:0,oy:0};
+function ptrV(e){const r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left-VST.ox)/VST.s, y:(e.clientY-r.top-VST.oy)/VST.s};}
+let last=performance.now();
+function loop(t){
+  const dt=Math.min((t-last)/1000,0.05);last=t;
+  resizeIfNeeded();
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,cw,ch);
+  drawBackdrop(dt);
+  const FIT=getFIT();
+  const ctrls=document.querySelector('.controls');
+  const reserveW=(ctrls?ctrls.getBoundingClientRect().width:200)+28;
+  const availW=Math.max(150,cw-reserveW);
+  const s=Math.min(availW/FIT.w, ch/FIT.h);
+  const ox=reserveW+(availW-FIT.w*s)/2-FIT.x*s, oy=(ch-FIT.h*s)/2-FIT.y*s;
+  VST={s,ox,oy};
+  ctx.save();ctx.translate(ox,oy);ctx.scale(s,s);
+  drawSim(dt);
+  ctx.restore();
+  if(activeTab==='data')updateData();
+  requestAnimationFrame(loop);
+}
+
+/* ===== コントロール部品ヘルパ ===== */
+function trackP(el){const mn=+el.min,mx=+el.max;el.style.setProperty('--p',((el.value-mn)/(mx-mn)*100)+'%');}
+function bindSlider(id,fmt,fn){const el=document.getElementById(id),lb=document.getElementById(id+'v');
+  const f=()=>{const v=+el.value;if(lb)lb.textContent=fmt(v);trackP(el);fn(v);};
+  el.oninput=f;trackP(el);return el;}
+function bindToggle(id,fn){const el=document.getElementById(id);
+  el.onclick=()=>{el.classList.toggle('on');fn(el.classList.contains('on'));};return el;}
+function bindSeg(id,fn){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');fn(b.dataset.m);});}
+document.getElementById('ptog').onclick=()=>document.getElementById('aside').classList.add('open');
+document.getElementById('pclose').onclick=()=>document.getElementById('aside').classList.remove('open');
+
+/* ===== サイドパネル（タブ） ===== */
+let activeTab='data';
+document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>{
+  activeTab=b.dataset.tab;
+  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x.dataset.tab===activeTab));
+  renderPanel();document.getElementById('aside').classList.add('open');
+});
+function renderPanel(){
+  const body=document.getElementById('panelbody');
+  if(activeTab==='data')body.innerHTML=dataHTML();
+  else if(activeTab==='ex')body.innerHTML=exHTML();
+  else{body.innerHTML=quizHTML();bindQuiz();}
+}
+function setT(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function setW(id,pct){const el=document.getElementById(id);if(el)el.style.width=clamp(pct,0,100).toFixed(0)+'%';}
+
+/* ===== クイズ（QBANK と QUIZ_PERFECT は単元側で定義） ===== */
+let quiz=null;
+function newQuiz(){return {active:true,order:[...Array(QBANK.length).keys()].sort(()=>Math.random()-0.5).slice(0,6),idx:0,score:0,answered:null};}
+function quizHTML(){
+  if(!quiz||!quiz.active)return `<div class="empty"><span class="big">📝</span>このページのクイズに挑戦！<br>予想してから答えよう。<button class="btn primary" id="qstart" style="margin-top:14px">クイズを始める</button></div>`;
+  const Q=QBANK[quiz.order[quiz.idx]];
+  const opts=Q.o.map((o,i)=>{
+    let cls='quiz-opt';
+    if(quiz.answered!=null){if(i===Q.a)cls+=' ok';else if(i===quiz.answered)cls+=' ng';}
+    return `<button class="${cls}" data-i="${i}" ${quiz.answered!=null?'disabled':''}>${o}</button>`;
+  }).join('');
+  let fb='';
+  if(quiz.answered!=null){const ok=quiz.answered===Q.a;
+    fb=`<div class="quiz-fb show ${ok?'ok':'ng'}"><span class="lab">${ok?'正解':'おしい'}</span>${Q.e}</div>`;}
+  const next=quiz.answered!=null?`<button class="btn primary" id="qnext">${quiz.idx<quiz.order.length-1?'次の問題 →':'結果を見る'}</button>`:'';
+  return `<div class="quiz-prog">Q ${quiz.idx+1} / ${quiz.order.length} ・ SCORE ${quiz.score}</div>
+    <div class="quiz-q"><span class="num">Q${quiz.idx+1}</span>${Q.q}</div>${opts}${fb}${next}`;
+}
+function bindQuiz(){
+  const s=document.getElementById('qstart');if(s)s.onclick=()=>{quiz=newQuiz();renderPanel();};
+  document.querySelectorAll('.quiz-opt').forEach(b=>b.onclick=()=>{
+    if(quiz.answered!=null)return;quiz.answered=+b.dataset.i;
+    if(quiz.answered===QBANK[quiz.order[quiz.idx]].a)quiz.score++;renderPanel();
+  });
+  const n=document.getElementById('qnext');if(n)n.onclick=()=>{
+    if(quiz.idx<quiz.order.length-1){quiz.idx++;quiz.answered=null;renderPanel();}
+    else{
+      const sc=quiz.score,tot=quiz.order.length;
+      const msg=sc===tot?QUIZ_PERFECT:sc>=tot*0.6?'よくできました！':'解説タブを見て復習しよう。';
+      document.getElementById('panelbody').innerHTML=`<div class="quiz-result"><div class="score">${sc}/${tot}</div><div class="lab">${msg}</div><button class="btn primary" id="qretry">もう一度</button></div>`;
+      document.getElementById('qretry').onclick=()=>{quiz=newQuiz();renderPanel();};
+      quiz.active=false;
+    }
+  };
+}
+
+/* ================== ここから単元固有 ================== */
+/* ===== 地震のゆれ ===== */
+let mode='map', dist=60, Vp=7, Vs=3.5;
+let tQ=0, playing=true, T=0;
+const KM=2.1;                            // 1km=2.1px
+const EX=150, EY=176;                    // 震央
+const TMAX=42;                           // 地震計の表示幅[s]
+
+const tP=()=>dist/Vp, tS=()=>dist/Vs, tDur=()=>dist*(1/Vs-1/Vp);
+
+function getFIT(){return {x:18,y:10,w:626,h:434};}
+
+/* --- ゆれの波形（時刻τでの振幅） --- */
+function ampAt(tau){
+  if(tau<tP())return 0;
+  const small=4.5*Math.sin(tau*22)*(0.7+0.3*Math.sin(tau*7.3));
+  if(tau<tS())return small;
+  const k=tau-tS();
+  const big=16*Math.exp(-k*0.06)*Math.sin(tau*11+1.3)*(0.75+0.25*Math.sin(tau*4.1));
+  return big+small*0.4*Math.exp(-k*0.2);
+}
+
+/* --- マップモード --- */
+function drawMap(){
+  const mx=40,my=44,mw=580,mh=212;
+  // 地図
+  ctx.fillStyle='rgba(20,30,24,.5)';rrect(ctx,mx,my,mw,mh,12);ctx.fill();
+  ctx.strokeStyle='rgba(120,180,140,.25)';ctx.lineWidth=1.2;rrect(ctx,mx,my,mw,mh,12);ctx.stroke();
+  ctx.save();ctx.beginPath();rrect(ctx,mx,my,mw,mh,12);ctx.clip();
+  ctx.strokeStyle='rgba(120,180,140,.1)';
+  for(let x=mx;x<mx+mw;x+=34){ctx.beginPath();ctx.moveTo(x,my);ctx.lineTo(x,my+mh);ctx.stroke();}
+  for(let y=my;y<my+mh;y+=34){ctx.beginPath();ctx.moveTo(mx,y);ctx.lineTo(mx+mw,y);ctx.stroke();}
+  // P波・S波の同心円
+  const rings=[{v:Vp,c:'#5fd3e0',n:'P波'},{v:Vs,c:'#f5a623',n:'S波'}];
+  rings.forEach(rg=>{
+    const r=rg.v*tQ*KM;
+    if(r<2)return;
+    for(let j=0;j<3;j++){
+      const rr=r-j*9; if(rr<2)continue;
+      ctx.strokeStyle=rg.c;ctx.globalAlpha=(0.85-j*0.3);
+      ctx.lineWidth=j?1.2:2.6;
+      if(!j){ctx.shadowColor=rg.c;ctx.shadowBlur=10;}
+      ctx.beginPath();ctx.arc(EX,EY,rr,0,TAU);ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    ctx.globalAlpha=1;
+    if(r>26&&r<mw)txt(rg.n,EX+r*0.71+12,EY-r*0.71-8,{size:11,w:700,color:rg.c});
+  });
+  // 震央
+  ctx.strokeStyle='#ff7a7a';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(EX-8,EY-8);ctx.lineTo(EX+8,EY+8);ctx.moveTo(EX+8,EY-8);ctx.lineTo(EX-8,EY+8);ctx.stroke();
+  txt('震央',EX,EY+22,{size:10.5,w:700,color:'#ff9a8a'});
+  // 観測点
+  const sx=EX+dist*KM, sy=EY;
+  const shaking=tQ>tP()&&tQ<tS()+22;
+  const jx=shaking?ampAt(tQ)*0.22:0;
+  ctx.save();ctx.translate(sx+jx,sy);
+  ctx.fillStyle='#28344f';ctx.strokeStyle='rgba(190,210,250,.6)';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(-12,2);ctx.lineTo(-12,-10);ctx.lineTo(0,-20);ctx.lineTo(12,-10);ctx.lineTo(12,2);ctx.closePath();
+  ctx.fill();ctx.stroke();
+  ctx.fillStyle='#ffce7a';ctx.fillRect(-4,-8,8,10);
+  ctx.restore();
+  txt('観測点',sx,sy+22,{size:10.5,w:700,color:'#9ff0fb'});
+  // 距離の線
+  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(200,214,240,.35)';ctx.lineWidth=1.1;
+  ctx.beginPath();ctx.moveTo(EX,EY+34);ctx.lineTo(sx,sy+34);ctx.stroke();ctx.setLineDash([]);
+  txt(dist+' km',(EX+sx)/2,EY+46,{size:10,color:'#8893ad',mono:true});
+  ctx.restore();
+  // 時計
+  txt('発生から',mx+mw-66,my+18,{size:9.5,color:'#8893ad',align:'right'});
+  txt(tQ.toFixed(1)+' s',mx+mw-14,my+19,{size:14,w:600,color:'#e8ecf6',align:'right',mono:true});
+
+  /* --- 地震計 --- */
+  const gx=70,gy=288,gw=540,gh=128;
+  ctx.fillStyle='rgba(8,12,24,.65)';rrect(ctx,gx-26,gy-16,gw+52,gh+34,10);ctx.fill();
+  ctx.strokeStyle='rgba(120,150,210,.3)';ctx.lineWidth=1.2;rrect(ctx,gx-26,gy-16,gw+52,gh+34,10);ctx.stroke();
+  txt('観測点の地震計',gx-16,gy-2,{size:10.5,color:'#8893ad',align:'left'});
+  const X=t=>gx+t/TMAX*gw, mid=gy+gh/2+6;
+  ctx.strokeStyle='rgba(120,150,210,.18)';ctx.lineWidth=1;
+  for(let t=0;t<=TMAX;t+=10){
+    ctx.beginPath();ctx.moveTo(X(t),gy+10);ctx.lineTo(X(t),gy+gh);ctx.stroke();
+    txt(t+'s',X(t),gy+gh+10,{size:8.5,color:'#5d6a88',mono:true});
+  }
+  // P/S到着マーカーと初期微動継続時間
+  if(tQ>=tP()){
+    ctx.strokeStyle='rgba(95,211,224,.7)';ctx.setLineDash([3,3]);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(X(tP()),gy+8);ctx.lineTo(X(tP()),gy+gh);ctx.stroke();
+    txt('P到着',X(tP()),gy+2,{size:9,color:'#9ff0fb'});
+  }
+  if(tQ>=tS()){
+    ctx.strokeStyle='rgba(245,166,35,.75)';ctx.beginPath();ctx.moveTo(X(tS()),gy+8);ctx.lineTo(X(tS()),gy+gh);ctx.stroke();ctx.setLineDash([]);
+    txt('S到着',X(tS()),gy+2,{size:9,color:'#ffce7a'});
+    // 区間
+    ctx.fillStyle='rgba(95,211,224,.08)';
+    ctx.fillRect(X(tP()),gy+12,X(tS())-X(tP()),gh-14);
+    txt('初期微動 '+tDur().toFixed(1)+'s',(X(tP())+X(tS()))/2,gy+gh-6,{size:9,w:700,color:'#9ff0fb'});
+    txt('主要動',X(Math.min(tS()+6,TMAX-3)),gy+gh-6,{size:9,w:700,color:'#ffce7a'});
+  }
+  ctx.setLineDash([]);
+  // 波形
+  ctx.save();ctx.beginPath();ctx.rect(gx,gy+8,gw,gh);ctx.clip();
+  ctx.strokeStyle='#dffaff';ctx.lineWidth=1.6;
+  ctx.shadowColor='#5fd3e0';ctx.shadowBlur=5;
+  ctx.beginPath();
+  const tEnd=Math.min(tQ,TMAX);
+  for(let t=0;t<=tEnd;t+=0.045){
+    const y=mid-ampAt(t)*2.6;
+    t?ctx.lineTo(X(t),y):ctx.moveTo(X(t),y);
+  }
+  ctx.stroke();ctx.restore();
+}
+
+/* --- 走時グラフモード --- */
+function drawGraph(){
+  const gx=110,gy=58,gw=420,gh=320;
+  const DMAX=120,TMX=40;
+  const X=d=>gx+d/DMAX*gw, Y=t=>gy+gh-t/TMX*gh;
+  ctx.fillStyle='rgba(8,12,24,.5)';rrect(ctx,gx-10,gy-10,gw+24,gh+22,12);ctx.fill();
+  ctx.strokeStyle='rgba(120,150,210,.16)';ctx.lineWidth=1;
+  for(let t=0;t<=TMX;t+=10){
+    ctx.beginPath();ctx.moveTo(gx,Y(t));ctx.lineTo(gx+gw,Y(t));ctx.stroke();
+    txt(t,gx-12,Y(t),{size:9,color:'#5d6a88',align:'right',mono:true});
+  }
+  for(let d=0;d<=DMAX;d+=20){
+    ctx.beginPath();ctx.moveTo(X(d),gy);ctx.lineTo(X(d),gy+gh);ctx.stroke();
+    txt(d,X(d),gy+gh+12,{size:9,color:'#5d6a88',mono:true});
+  }
+  txt('震源からの距離[km]',gx+gw/2,gy+gh+30,{size:10,color:'#8893ad'});
+  ctx.save();ctx.translate(gx-34,gy+gh/2);ctx.rotate(-Math.PI/2);
+  txt('地震発生からの時間[s]',0,0,{size:10,color:'#8893ad'});ctx.restore();
+  // P・S直線
+  [[Vp,'#5fd3e0','P波（はやい）'],[Vs,'#f5a623','S波（おそい）']].forEach(([v,c,n])=>{
+    ctx.strokeStyle=c;ctx.lineWidth=2.4;ctx.shadowColor=c;ctx.shadowBlur=6;
+    const dEnd=Math.min(DMAX,TMX*v);
+    ctx.beginPath();ctx.moveTo(X(0),Y(0));ctx.lineTo(X(dEnd),Y(dEnd/v));ctx.stroke();ctx.shadowBlur=0;
+    txt(n,X(dEnd)-6,Y(dEnd/v)-12,{size:10.5,w:700,color:c,align:'right'});
+  });
+  // 観測点の距離ガイド
+  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(200,214,240,.45)';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(X(dist),gy);ctx.lineTo(X(dist),gy+gh);ctx.stroke();ctx.setLineDash([]);
+  // 区間（初期微動継続時間）
+  ctx.strokeStyle='#ff8d7a';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(X(dist),Y(tP()));ctx.lineTo(X(dist),Y(tS()));ctx.stroke();
+  ctx.fillStyle='#9ff0fb';ctx.beginPath();ctx.arc(X(dist),Y(tP()),4,0,TAU);ctx.fill();
+  ctx.fillStyle='#ffce7a';ctx.beginPath();ctx.arc(X(dist),Y(tS()),4,0,TAU);ctx.fill();
+  txt('初期微動継続時間 '+tDur().toFixed(1)+'s',X(dist)+10,(Y(tP())+Y(tS()))/2,{size:10.5,w:700,color:'#ff8d7a',align:'left'});
+  txt(dist+'km',X(dist),gy-10,{size:10,color:'#c8d0e4',mono:true});
+  txt('距離が2倍になると、初期微動継続時間も2倍（比例）',gx+gw/2,gy+gh+48,{size:10.5,color:'#8893ad'});
+  // ミニ比較
+  const d2=Math.min(dist*2,DMAX);
+  if(d2>dist){
+    ctx.setLineDash([2,4]);ctx.strokeStyle='rgba(255,141,122,.5)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(X(d2),Y(d2/Vp));ctx.lineTo(X(d2),Y(d2/Vs));ctx.stroke();ctx.setLineDash([]);
+    if(d2/Vs<=TMX)txt((d2*(1/Vs-1/Vp)).toFixed(1)+'s',X(d2)+8,(Y(d2/Vp)+Y(d2/Vs))/2,{size:9.5,color:'rgba(255,141,122,.8)',align:'left',mono:true});
+  }
+}
+function drawSim(dt){
+  T+=dt;
+  if(mode==='map'){
+    if(playing)tQ=Math.min(tQ+dt*3.2,70);   // 3.2倍速
+    drawMap();
+  }else drawGraph();
+}
+
+/* ===== パネル ===== */
+function dataHTML(){
+  return `<div class="meter"><span class="k">震源からの距離</span><span class="v"><span id="dD">60</span> <small>km</small></span></div>
+  <div class="meter"><span class="k">P波の速さ</span><span class="v" style="color:#9ff0fb"><span id="dVp">7.0</span> <small>km/s</small></span></div>
+  <div class="meter"><span class="k">S波の速さ</span><span class="v amber"><span id="dVs">3.5</span> <small>km/s</small></span></div>
+  <div class="sub2">この観測点では</div>
+  <div class="meter"><span class="k">P波の到着（初期微動）</span><span class="v"><span id="dTp">0.0</span> <small>秒後</small></span></div>
+  <div class="meter"><span class="k">S波の到着（主要動）</span><span class="v"><span id="dTs">0.0</span> <small>秒後</small></span></div>
+  <div class="meter"><span class="k">初期微動継続時間</span><span class="v big"><span id="dDur">0.0</span> <small>s</small></span></div>
+  <div class="formula"><div class="eq">時間 ＝ <span>距離 ÷ 速さ</span></div>
+    <div class="lab">P波・S波それぞれで計算 → 差が継続時間</div></div>
+  <div class="note">初期微動継続時間は<b>震源からの距離に比例</b>。継続時間がわかれば距離が逆算できます（大森公式）。</div>`;
+}
+function updateData(){
+  if(!document.getElementById('dD')){document.getElementById('panelbody').innerHTML=dataHTML();return;}
+  setT('dD',dist);setT('dVp',Vp.toFixed(1));setT('dVs',Vs.toFixed(1));
+  setT('dTp',tP().toFixed(1));setT('dTs',tS().toFixed(1));setT('dDur',tDur().toFixed(1));
+}
+function exHTML(){
+  return `<div class="ex">
+  <h3>2種類の波が同時に出発する</h3>
+  <p>地震が起こると、震源から<b>P波</b>（Primary：はやい、約5〜8km/s）と<b>S波</b>(Secondary：おそい、約3〜4km/s）が<b>同時に</b>出発します。はやいP波が先に届きます。</p>
+  <div class="pt">P波が届く → 小さなゆれ＝<b>初期微動</b>。</div>
+  <div class="pt">S波が届く → 大きなゆれ＝<b>主要動</b>。</div>
+  <div class="pt">P波到着からS波到着までの時間＝<b>初期微動継続時間</b>。</div>
+  <h3>継続時間は距離に比例</h3>
+  <p>遠い場所ほど2つの波の到着の差が開くので、初期微動継続時間は<b>震源からの距離に比例</b>します。「距離と時間」モードのグラフで、距離2倍→差も2倍を確かめよう。</p>
+  <div class="pt">計算は「時間＝距離÷速さ」をP波とS波で別々にやって<b>引き算</b>。</div>
+  <div class="pt"><b>緊急地震速報</b>は、先に届くP波を検知して、S波が来る前に知らせるしくみ。</div>
+  <div class="note"><b>震度</b>はその場所のゆれの強さ（0〜7の10段階）、<b>マグニチュード</b>は地震そのものの規模。1つの地震でマグニチュードは1つ、震度は場所ごとにちがいます。</div>
+  </div>`;
+}
+const QUIZ_PERFECT='パーフェクト！地震マスター📳';
+const QBANK=[
+ {q:'先に観測点に届くのは？',o:['P波','S波','同時'],a:0,e:'P波の方が速いので先に届きます（Pは Primary＝最初の、の頭文字）。'},
+ {q:'初期微動を起こす波は？',o:['P波','S波','津波'],a:0,e:'先に届くP波が小さなゆれ＝初期微動を起こします。'},
+ {q:'主要動を起こす波は？',o:['P波','S波','表面の風'],a:1,e:'あとから届くS波が大きなゆれ＝主要動を起こします。'},
+ {q:'初期微動継続時間とは？',o:['P波が伝わる時間','S波が伝わる時間','P波到着からS波到着までの時間'],a:2,e:'P波が届いてからS波が届くまでの時間です。'},
+ {q:'震源から遠くなると、初期微動継続時間は？',o:['長くなる','短くなる','変わらない'],a:0,e:'距離に比例して長くなります。これを使って震源までの距離が求められます。'},
+ {q:'震源から70kmの地点。P波7km/s、S波3.5km/sのとき初期微動継続時間は？',o:['10秒','20秒','30秒'],a:0,e:'P波：70÷7＝10秒、S波：70÷3.5＝20秒。差は20−10＝10秒です。'},
+ {q:'地震そのものの規模を表すのは？',o:['震度','マグニチュード','ヘクトパスカル'],a:1,e:'規模はマグニチュード。震度は各地点でのゆれの強さです。'},
+ {q:'緊急地震速報が利用しているのは？',o:['P波とS波の速さのちがい','光と音の速さのちがい','気圧の変化'],a:0,e:'先に届くP波を検知し、S波（主要動）の到着前に警報を出します。'},
+];
+
+/* ===== コントロール ===== */
+bindSeg('modeSeg',v=>{
+  mode=v;
+  document.querySelectorAll('.cmap').forEach(el=>el.classList.toggle('hide',mode!=='map'));
+  if(activeTab!=='quiz')renderPanel();
+});
+bindSlider('dist',v=>v+' km',v=>dist=v);
+bindSlider('vp',v=>v.toFixed(1)+' km/s',v=>Vp=v);
+bindSlider('vs',v=>v.toFixed(1)+' km/s',v=>Vs=v);
+bindToggle('tgPlay',v=>playing=v);
+document.getElementById('btnGo').onclick=()=>{tQ=0;playing=true;const tg=document.getElementById('tgPlay');tg.classList.add('on');};
+
+/* ===== 起動 ===== */
+resize();renderPanel();requestAnimationFrame(loop);
+</script>
+
+<div class="rotate-tip" id="manabiRotate">
+  <div class="rt-ic">📱</div>
+  <div class="rt-msg">横向きにすると<br>見やすくなります</div>
+  <div class="rt-sub">スマホを横に回してください</div>
+  <button class="rt-x" id="manabiRotateX">このまま縦で使う</button>
+</div>
+<script>
+(function(){
+  "use strict";
+  var doc=document;
+  /* 1) canvasのサイズを常に親要素に合わせ続ける
+        （スマホのアドレスバー出入り・画面回転で高さが変わっても崩れないように） */
+  var cv=doc.getElementById('cv');
+  if(cv && cv.parentElement && typeof resize==='function'){
+    var lw=-1, lh=-1;
+    var tick=function(){
+      var r=cv.parentElement.getBoundingClientRect();
+      var w=Math.round(r.width), h=Math.round(r.height);
+      if(w>0 && h>0 && (w!==lw || h!==lh)){ lw=w; lh=h; try{ resize(); }catch(e){} }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  /* 2) 操作を始めたら左上のヒントをそっと消す（小さい画面で邪魔にならないように） */
+  var hint=doc.querySelector('.hint');
+  var stage=doc.querySelector('.stage');
+  if(hint && stage){
+    stage.addEventListener('pointerdown', function(){ hint.classList.add('is-hidden'); }, {once:true});
+  }
+  /* 3) 縦向き案内を閉じる */
+  var rx=doc.getElementById('manabiRotateX'), rt=doc.getElementById('manabiRotate');
+  if(rx && rt){ rx.addEventListener('click', function(){ rt.classList.add('is-hidden'); }); }
+})();
+</script>
+</body>
+</html>
